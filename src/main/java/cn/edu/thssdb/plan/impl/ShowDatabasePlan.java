@@ -20,21 +20,15 @@ package cn.edu.thssdb.plan.impl;
 
 import cn.edu.thssdb.plan.LogicalPlan;
 
-public class CreateDatabasePlan extends LogicalPlan {
+public class ShowDatabasePlan extends LogicalPlan {
 
-  private String databaseName;
+    public ShowDatabasePlan() {
+        super(LogicalPlanType.SHOW_DB);
+    }
 
-  public CreateDatabasePlan(String databaseName) {
-    super(LogicalPlanType.CREATE_DB);
-    this.databaseName = databaseName.toLowerCase();
-  }
 
-  public String getDatabaseName() {
-    return databaseName;
-  }
-
-  @Override
-  public String toString() {
-    return "CreateDatabasePlan{" + "databaseName='" + databaseName + '\'' + '}';
-  }
+    @Override
+    public String toString() {
+        return "ShowDatabasesPlan";
+    }
 }

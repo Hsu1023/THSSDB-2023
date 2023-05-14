@@ -18,7 +18,10 @@ import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IServiceHandler implements IService.Iface {
@@ -51,10 +54,24 @@ public class IServiceHandler implements IService.Iface {
     }
     // TODO: implement execution logic
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
+    Manager manager = Manager.getInstance();
     switch (plan.getType()) {
       case CREATE_DB:
         System.out.println("[DEBUG] " + plan);
+        CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
+        manager.createDatabaseIfNotExists(createDBPlan.getDatabaseName());
+        manager.persist();
         return new ExecuteStatementResp(StatusUtil.success(), false);
+      case SHOW_DB:
+        System.out.println("[DEBUG] " + plan);
+        ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
+        resp.setColumnsList(Arrays.asList("Names of Databases"));
+        List<String> names = manager.getDatabaseNames();
+        List<List<String>> result = new ArrayList<>();
+        for (String name:names)
+          result.add(Arrays.asList(name));
+        resp.setRowList(result);
+        return resp;
       default:
     }
     return null;
