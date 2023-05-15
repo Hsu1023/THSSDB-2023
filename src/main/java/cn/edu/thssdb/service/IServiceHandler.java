@@ -3,6 +3,7 @@ package cn.edu.thssdb.service;
 import cn.edu.thssdb.plan.LogicalGenerator;
 import cn.edu.thssdb.plan.LogicalPlan;
 import cn.edu.thssdb.plan.impl.CreateDatabasePlan;
+import cn.edu.thssdb.plan.impl.DropDatabasePlan;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
 import cn.edu.thssdb.rpc.thrift.DisconnectReq;
@@ -56,22 +57,32 @@ public class IServiceHandler implements IService.Iface {
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
     switch (plan.getType()) {
+
       case CREATE_DB:
         System.out.println("[DEBUG] " + plan);
         CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
         manager.createDatabaseIfNotExists(createDBPlan.getDatabaseName());
-        manager.persist();
         return new ExecuteStatementResp(StatusUtil.success(), false);
+
       case SHOW_DB:
         System.out.println("[DEBUG] " + plan);
-        ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
-        resp.setColumnsList(Arrays.asList("Names of Databases"));
+        ExecuteStatementResp resp_showdb = new ExecuteStatementResp(StatusUtil.success(), true);
+        resp_showdb.setColumnsList(Arrays.asList("Names of Databases"));
         List<String> names = manager.getDatabaseNames();
         List<List<String>> result = new ArrayList<>();
         for (String name:names)
           result.add(Arrays.asList(name));
-        resp.setRowList(result);
-        return resp;
+        resp_showdb.setRowList(result);
+        return resp_showdb;
+
+      case DROP_DB:
+        System.out.println("[DEBUG] " + plan);
+        DropDatabasePlan dropDBPlan = (DropDatabasePlan) plan;
+        String dbName = dropDBPlan.getDatabaseName();
+        manager.deleteDatabase(dbName);
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+
       default:
     }
     return null;
