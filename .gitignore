@@ -1,1 +1,4 @@
-.idea/**
+# Compiled class file
+*.class
+
+.idea/
