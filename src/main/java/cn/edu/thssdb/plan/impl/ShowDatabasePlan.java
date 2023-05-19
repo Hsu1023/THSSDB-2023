@@ -22,13 +22,12 @@ import cn.edu.thssdb.plan.LogicalPlan;
 
 public class ShowDatabasePlan extends LogicalPlan {
 
-    public ShowDatabasePlan() {
-        super(LogicalPlanType.SHOW_DB);
-    }
+  public ShowDatabasePlan() {
+    super(LogicalPlanType.SHOW_DB);
+  }
 
-
-    @Override
-    public String toString() {
-        return "ShowDatabasesPlan";
-    }
+  @Override
+  public String toString() {
+    return "ShowDatabasesPlan";
+  }
 }

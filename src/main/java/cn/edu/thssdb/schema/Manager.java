@@ -4,12 +4,10 @@ import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.utils.Global;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.FileHandler;
 
 public class Manager {
   private HashMap<String, Database> databases;
@@ -28,7 +26,7 @@ public class Manager {
     databases = new HashMap<>();
     curDatabase = null;
     File dataFile = new File(MANAGER_DATAPATH);
-    if (!dataFile.exists()){
+    if (!dataFile.exists()) {
       dataFile.getParentFile().mkdirs();
     }
     this.recover();
@@ -38,17 +36,16 @@ public class Manager {
     // TODO
     Boolean change = false;
     lock.writeLock().lock();
-    try{
-        if (!databases.containsKey(name)) {
-          Database newDatabase = new Database(name);
-          databases.put(name, newDatabase);
-          change = true;
-          System.out.println("[DEBUG] " + "create db "+name);
-        }
-        else {
-          System.out.println("[DEBUG] " + "duplicated db "+name);
-          throw new DuplicateKeyException();
-        }
+    try {
+      if (!databases.containsKey(name)) {
+        Database newDatabase = new Database(name);
+        databases.put(name, newDatabase);
+        change = true;
+        System.out.println("[DEBUG] " + "create db " + name);
+      } else {
+        System.out.println("[DEBUG] " + "duplicated db " + name);
+        throw new DuplicateKeyException();
+      }
     } finally {
       if (change) persistDatabases();
       lock.writeLock().unlock();
@@ -60,17 +57,16 @@ public class Manager {
 
     Boolean change = false;
     lock.writeLock().lock();
-    try{
-      if (databases.containsKey(name)){
+    try {
+      if (databases.containsKey(name)) {
         Database db = databases.get(name);
         // TODO: db ...
         databases.remove(name);
         change = true;
-        System.out.println("[DEBUG] " + "delete db "+name);
-      }
-      else {
+        System.out.println("[DEBUG] " + "delete db " + name);
+      } else {
 
-        System.out.println("[DEBUG] " + "non-existed db "+name);
+        System.out.println("[DEBUG] " + "non-existed db " + name);
         throw new KeyNotExistException();
       }
     } finally {
@@ -79,9 +75,10 @@ public class Manager {
     }
   }
 
-  public ArrayList<String> getDatabaseNames(){
+  public ArrayList<String> getDatabaseNames() {
     return new ArrayList<>(databases.keySet());
   }
+
   public void switchDatabase() {
     // TODO
   }
@@ -91,15 +88,13 @@ public class Manager {
     try {
       FileOutputStream fos = new FileOutputStream(MANAGER_DATAPATH);
       OutputStreamWriter writer = new OutputStreamWriter(fos);
-      for (String databaseName : databases.keySet())
-        writer.write(databaseName + "\n");
+      for (String databaseName : databases.keySet()) writer.write(databaseName + "\n");
       writer.close();
       fos.close();
-    } catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
       // throw exception
     }
-
   }
 
   private void recover() {
@@ -112,7 +107,7 @@ public class Manager {
       while ((line = reader.readLine()) != null) {
         createDatabaseIfNotExists(line);
       }
-    } catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
       // throw exception
     }
