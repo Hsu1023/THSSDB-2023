@@ -57,7 +57,6 @@ public class IServiceHandler implements IService.Iface {
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
     switch (plan.getType()) {
-
       case CREATE_DB:
         System.out.println("[DEBUG] " + plan);
         CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
@@ -70,8 +69,7 @@ public class IServiceHandler implements IService.Iface {
         resp_showdb.setColumnsList(Arrays.asList("Names of Databases"));
         List<String> names = manager.getDatabaseNames();
         List<List<String>> result = new ArrayList<>();
-        for (String name:names)
-          result.add(Arrays.asList(name));
+        for (String name : names) result.add(Arrays.asList(name));
         resp_showdb.setRowList(result);
         return resp_showdb;
 
@@ -81,7 +79,6 @@ public class IServiceHandler implements IService.Iface {
         String dbName = dropDBPlan.getDatabaseName();
         manager.deleteDatabase(dbName);
         return new ExecuteStatementResp(StatusUtil.success(), false);
-
 
       default:
     }
