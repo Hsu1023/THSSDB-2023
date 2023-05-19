@@ -3,7 +3,6 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.utils.Global;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import javax.xml.crypto.Data;
 import java.io.*;
@@ -17,7 +16,7 @@ public class Manager {
 
   private Database curDatabase;
 
-  private static String MANAGER_DATAPATH = Global.DATA_PATH + File.pathSeparator + "manager";
+  private static String MANAGER_DATAPATH = Global.DATA_PATH + File.separator + "manager.db";
   private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   public static Manager getInstance() {
@@ -30,7 +29,7 @@ public class Manager {
     curDatabase = null;
     File dataFile = new File(MANAGER_DATAPATH);
     if (!dataFile.exists()){
-      dataFile.mkdirs();
+      dataFile.getParentFile().mkdirs();
     }
     this.recover();
   }
