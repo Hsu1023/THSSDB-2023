@@ -51,7 +51,7 @@ public class ThssDBSQLVisitor extends SQLBaseVisitor<LogicalPlan> {
   }
 
   @Override
-  public LogicalPlan visitShowMetaStmt(SQLParser.ShowMetaStmtContext ctx) {
+  public LogicalPlan visitShowTableStmt(SQLParser.ShowTableStmtContext ctx) {
     return new ShowTablePlan(ctx.tableName().children.get(0).toString());
   }
 
