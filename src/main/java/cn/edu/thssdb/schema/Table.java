@@ -1,9 +1,12 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.exception.MultiPrimaryKeyException;
+import cn.edu.thssdb.exception.NoPrimaryKeyException;
 import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.utils.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -16,7 +19,30 @@ public class Table implements Iterable<Row> {
   private int primaryIndex;
 
   public Table(String databaseName, String tableName, Column[] columns) {
-    // TODO
+    this.lock = new ReentrantReadWriteLock();
+    this.databaseName = databaseName;
+    this.tableName = tableName;
+    this.columns = new ArrayList<>(Arrays.asList(columns));
+    this.index = new BPlusTree<>();
+    this.primaryIndex = -1;
+
+    for (int i = 0; i < this.columns.size(); i++) {
+      if (this.columns.get(i).isPrimary()) {
+        if (this.primaryIndex >= 0) {
+          System.out.println("[DEBUG] " + "multi primary keys");
+          throw new MultiPrimaryKeyException();
+        }
+        this.primaryIndex = i;
+      }
+    }
+    if (this.primaryIndex < 0) {
+      System.out.println("[DEBUG] " + "no primary key");
+      throw new NoPrimaryKeyException();
+    }
+
+    // TODO initiate lock status.
+
+    recover();
   }
 
   private void recover() {

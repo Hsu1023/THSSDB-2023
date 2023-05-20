@@ -2,8 +2,7 @@ package cn.edu.thssdb.service;
 
 import cn.edu.thssdb.plan.LogicalGenerator;
 import cn.edu.thssdb.plan.LogicalPlan;
-import cn.edu.thssdb.plan.impl.CreateDatabasePlan;
-import cn.edu.thssdb.plan.impl.DropDatabasePlan;
+import cn.edu.thssdb.plan.impl.*;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
 import cn.edu.thssdb.rpc.thrift.DisconnectReq;
@@ -80,6 +79,36 @@ public class IServiceHandler implements IService.Iface {
         manager.deleteDatabase(dbName);
         return new ExecuteStatementResp(StatusUtil.success(), false);
 
+      case USE_DB:
+        System.out.println("[DEBUG] " + plan);
+        UseDatabasePlan useDBPlan = (UseDatabasePlan) plan;
+        String currDB = useDBPlan.getDatabaseName();
+        manager.switchDatabase(currDB);
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case CREATE_TB:
+        System.out.println("[DEBUG] " + plan);
+        CreateTablePlan createTBPlan = (CreateTablePlan) plan;
+        manager.createTableIfNotExist(createTBPlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case SHOW_TB:
+        System.out.println("[DEBUG] " + plan);
+        ShowTablePlan showTBPlan = (ShowTablePlan) plan;
+        String tableMessage = manager.showTable(showTBPlan.getTableName());
+        ExecuteStatementResp resp_showtb = new ExecuteStatementResp(StatusUtil.success(), true);
+        resp_showtb.setColumnsList(Arrays.asList("Table Content"));
+        List<List<String>> res = new ArrayList<>();
+        res.add(Arrays.asList(tableMessage));
+        resp_showtb.setRowList(res);
+        return resp_showtb;
+
+      case DROP_TB:
+        System.out.println("[DEBUG] " + plan);
+        DropTablePlan dropTBPlan = (DropTablePlan) plan;
+        String tbName = dropTBPlan.getTableName();
+        manager.deleteTable(tbName);
+        return new ExecuteStatementResp(StatusUtil.success(), false);
       default:
     }
     return null;
