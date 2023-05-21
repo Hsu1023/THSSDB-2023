@@ -232,15 +232,10 @@ public class Manager {
               }
             }
           }
-        }
-        Column[] columns = new Column[columnItems.size()];
-        for (int i = 0; i < columnItems.size(); i++) {
-          columns[i] = columnItems.get(i);
-        }
-        if (curDatabase == null) {
+        }if (curDatabase == null) {
           throw new DatabaseNotExistException();
         } else {
-          curDatabase.create(tableName, columns);
+          curDatabase.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
         }
       }
     } finally {
@@ -293,7 +288,7 @@ public class Manager {
         System.out.println("[DEBUG] " + "current db is null");
         throw new DatabaseNotExistException();
       } else {
-        curDatabase.drop(name);
+        curDatabase.dropTable(name);
       }
     } finally {
 
@@ -301,18 +296,25 @@ public class Manager {
   }
 
   private void recover() {
-    File readDatabasesFile = new File(MANAGER_DATAPATH);
-    if (!readDatabasesFile.exists()) return;
+
+    lock.writeLock().lock();
     try {
-      FileReader fileReader = new FileReader(MANAGER_DATAPATH);
-      BufferedReader reader = new BufferedReader(fileReader);
-      String line;
-      while ((line = reader.readLine()) != null) {
-        createDatabaseIfNotExists(line);
+      File readDatabasesFile = new File(MANAGER_DATAPATH);
+      if (!readDatabasesFile.exists()) return;
+      try {
+        FileReader fileReader = new FileReader(MANAGER_DATAPATH);
+        BufferedReader reader = new BufferedReader(fileReader);
+        String line;
+        while ((line = reader.readLine()) != null) {
+          createDatabaseIfNotExists(line);
+        }
+        reader.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+        // throw exception
       }
-    } catch (Exception e) {
-      e.printStackTrace();
-      // throw exception
+    } finally {
+      lock.writeLock().unlock();
     }
   }
 

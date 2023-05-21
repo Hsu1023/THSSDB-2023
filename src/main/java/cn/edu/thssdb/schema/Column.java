@@ -26,6 +26,13 @@ public class Column implements Comparable<Column> {
     return name + ',' + type + ',' + primary + ',' + notNull + ',' + maxLength;
   }
 
+  public static Column toColumn(String str){
+    String[] strings = str.split(",");
+    return new Column(strings[0], ColumnType.valueOf(strings[1]), Integer.valueOf(strings[2]),
+            Boolean.valueOf(strings[3]), Integer.valueOf(strings[4]));
+
+  }
+
   public String getName() {
     return name;
   }

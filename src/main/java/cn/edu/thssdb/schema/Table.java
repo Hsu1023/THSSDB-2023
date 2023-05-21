@@ -3,8 +3,10 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.exception.MultiPrimaryKeyException;
 import cn.edu.thssdb.exception.NoPrimaryKeyException;
 import cn.edu.thssdb.index.BPlusTree;
+import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.Pair;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -18,13 +20,24 @@ public class Table implements Iterable<Row> {
   public BPlusTree<Entry, Row> index;
   private int primaryIndex;
 
-  public Table(String databaseName, String tableName, Column[] columns) {
+  private String databaseFolderPath;
+  private String tableFolderPath;
+
+  public Table(String databaseName, String tableName, Column[] columns, String databaseFolderPath) {
     this.lock = new ReentrantReadWriteLock();
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.columns = new ArrayList<>(Arrays.asList(columns));
     this.index = new BPlusTree<>();
     this.primaryIndex = -1;
+    this.databaseFolderPath = databaseFolderPath;
+    this.tableFolderPath = databaseFolderPath + File.separator + tableName + File.separator;
+    File folder = new File(tableFolderPath);
+    if (!folder.exists()) {
+      boolean created = folder.mkdirs();
+      if (!created)
+        throw new RuntimeException();
+    }
 
     for (int i = 0; i < this.columns.size(); i++) {
       if (this.columns.get(i).isPrimary()) {
@@ -69,6 +82,12 @@ public class Table implements Iterable<Row> {
     // TODO
     return null;
   }
+  public String getFolderPath(){
+    return this.tableFolderPath;
+  }
+  public String getMetaDataPath(){
+    return this.tableFolderPath + "_meta";
+  }
 
   private class TableIterator implements Iterator<Row> {
     private Iterator<Pair<Entry, Row>> iterator;
@@ -87,6 +106,8 @@ public class Table implements Iterable<Row> {
       return iterator.next().right;
     }
   }
+
+
 
   @Override
   public Iterator<Row> iterator() {
