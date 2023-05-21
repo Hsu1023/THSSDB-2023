@@ -1,5 +1,7 @@
 package cn.edu.thssdb.schema;
 
+import cn.edu.thssdb.exception.NullValueException;
+import cn.edu.thssdb.exception.ValueExceedException;
 import cn.edu.thssdb.type.ColumnType;
 
 public class Column implements Comparable<Column> {
@@ -59,5 +61,33 @@ public class Column implements Comparable<Column> {
 
   public int getMaxLength() {
     return this.maxLength;
+  }
+
+  public Entry parseEntry(String valueString) {
+    ColumnType columnType = getColumnType();
+    if (valueString.toLowerCase().equals("null")) {
+      if (cantBeNull()) throw new NullValueException(getColumnName()); // 该列不可为null
+      else {
+        return new Entry(null);
+      }
+    }
+    switch (columnType) {
+      case INT:
+        return new Entry(Integer.valueOf(valueString));
+      case LONG:
+        return new Entry(Long.valueOf(valueString));
+      case FLOAT:
+        return new Entry(Float.valueOf(valueString));
+      case DOUBLE:
+        return new Entry(Double.valueOf(valueString));
+      case STRING:
+        String sWithoutQuotes = valueString.substring(1, valueString.length() - 1);
+        if (sWithoutQuotes.length() > getMaxLength()) // 长度超出该列限制
+        throw new ValueExceedException(
+              getColumnName(), valueString.length(), getMaxLength(), "(when parse row)");
+        return new Entry(sWithoutQuotes);
+      default:
+        return new Entry(null);
+    }
   }
 }
