@@ -233,7 +233,8 @@ public class Manager {
               }
             }
           }
-        }if (curDatabase == null) {
+        }
+        if (curDatabase == null) {
           throw new DatabaseNotExistException();
         } else {
           curDatabase.create(tableName, columnItems.toArray(new Column[columnItems.size()]));

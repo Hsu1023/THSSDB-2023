@@ -2,7 +2,6 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.index.BPlusTree;
-import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Pair;
 
@@ -35,8 +34,7 @@ public class Table implements Iterable<Row> {
     File folder = new File(tableFolderPath);
     if (!folder.exists()) {
       boolean created = folder.mkdirs();
-      if (!created)
-        throw new RuntimeException();
+      if (!created) throw new RuntimeException();
     }
 
     for (int i = 0; i < this.columns.size(); i++) {
@@ -119,10 +117,12 @@ public class Table implements Iterable<Row> {
     // TODO
     return null;
   }
-  public String getFolderPath(){
+
+  public String getFolderPath() {
     return this.tableFolderPath;
   }
-  public String getMetaDataPath(){
+
+  public String getMetaDataPath() {
     return this.tableFolderPath + "_meta";
   }
 
@@ -143,8 +143,6 @@ public class Table implements Iterable<Row> {
       return iterator.next().right;
     }
   }
-
-
 
   @Override
   public Iterator<Row> iterator() {
