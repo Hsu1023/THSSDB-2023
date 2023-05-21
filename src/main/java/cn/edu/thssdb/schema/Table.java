@@ -54,10 +54,9 @@ public class Table implements Iterable<Row> {
       // TODO lock control
       this.lock.writeLock().lock();
       this.checkRowValidInTable(row);
-      if(this.containsRow(row))
-        throw new DuplicateKeyException();
+      if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
-    }finally {
+    } finally {
       // TODO lock control
       this.lock.writeLock().unlock();
     }
@@ -71,26 +70,31 @@ public class Table implements Iterable<Row> {
     // TODO
   }
 
-  private void checkRowValidInTable(Row row){
-    if(row.getEntries().size()!=this.columns.size())
-      throw new SchemaLengthMismatchException(this.columns.size(), row.getEntries().size(), "when check Row Valid In table");
-    for(int i=0;i<row.getEntries().size();i++) {
+  private void checkRowValidInTable(Row row) {
+    if (row.getEntries().size() != this.columns.size())
+      throw new SchemaLengthMismatchException(
+          this.columns.size(), row.getEntries().size(), "when check Row Valid In table");
+    for (int i = 0; i < row.getEntries().size(); i++) {
       String entryValueType = row.getEntries().get(i).getValueType();
       Column column = this.columns.get(i);
-      if(entryValueType.equals("NULL")){
-        if(column.cantBeNull()) throw new NullValueException(column.getColumnName());
-      }
-      else{
+      if (entryValueType.equals("NULL")) {
+        if (column.cantBeNull()) throw new NullValueException(column.getColumnName());
+      } else {
         if (!entryValueType.equals(column.getColumnType().name()))
           throw new ValueFormatInvalidException("(when check row valid in table)");
         Comparable entryValue = row.getEntries().get(i).value;
-        if(entryValueType.equals(ColumnType.STRING.name()) && ((String) entryValue).length()>column.getMaxLength())
-          throw new ValueExceedException(column.getColumnName(), ((String) entryValue).length(), column.getMaxLength(), "(when check row valid in table)");
+        if (entryValueType.equals(ColumnType.STRING.name())
+            && ((String) entryValue).length() > column.getMaxLength())
+          throw new ValueExceedException(
+              column.getColumnName(),
+              ((String) entryValue).length(),
+              column.getMaxLength(),
+              "(when check row valid in table)");
       }
     }
   }
 
-  private Boolean containsRow(Row row){
+  private Boolean containsRow(Row row) {
     return this.index.contains(row.getEntries().get(this.primaryIndex));
   }
 

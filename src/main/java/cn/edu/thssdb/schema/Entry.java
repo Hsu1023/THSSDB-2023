@@ -32,14 +32,14 @@ public class Entry implements Comparable<Entry>, Serializable {
     return value.hashCode();
   }
 
-  public String getValueType(){
-    if(this.value == null) return "NULL";
+  public String getValueType() {
+    if (this.value == null) return "NULL";
     String valueClassString = this.value.getClass().toString();
-    if(valueClassString.contains("Integer")) return "INT";
-    if(valueClassString.contains("Long")) return "LONG";
-    if(valueClassString.contains("Float")) return "FLOAT";
-    if(valueClassString.contains("Double")) return "DOUBLE";
-    if(valueClassString.contains("String")) return "STRING";
+    if (valueClassString.contains("Integer")) return "INT";
+    if (valueClassString.contains("Long")) return "LONG";
+    if (valueClassString.contains("Float")) return "FLOAT";
+    if (valueClassString.contains("Double")) return "DOUBLE";
+    if (valueClassString.contains("String")) return "STRING";
     return "UNKNOWN";
   }
 }

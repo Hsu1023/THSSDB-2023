@@ -60,8 +60,8 @@ public class ThssDBSQLVisitor extends SQLBaseVisitor<LogicalPlan> {
     return new DropTablePlan(ctx.tableName().children.get(0).toString());
   }
 
-
-  @Override public LogicalPlan visitInsertStmt(SQLParser.InsertStmtContext ctx) {
+  @Override
+  public LogicalPlan visitInsertStmt(SQLParser.InsertStmtContext ctx) {
     return new InsertPlan(ctx);
   }
   // TODO: parser to more logical plan
