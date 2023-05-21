@@ -2,6 +2,7 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.DatabaseNotExistException;
 import cn.edu.thssdb.exception.DuplicateKeyException;
+import cn.edu.thssdb.exception.SchemaLengthMismatchException;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
@@ -245,6 +246,67 @@ public class Manager {
       }
     } finally {
 
+    }
+  }
+
+  private Database getAndAssumeCurrentDatabase()
+  {
+    if (curDatabase == null) {
+      System.out.println("[DEBUG] " + "current db is null");
+      throw new DatabaseNotExistException();
+    }
+    return curDatabase;
+  }
+
+  public void insert(SQLParser.InsertStmtContext ctx) {
+    try {
+        // get table
+        Database database = getAndAssumeCurrentDatabase();
+        String tableName = ctx.tableName().children.get(0).toString();
+        Table table = database.get(tableName);
+
+        // get value list
+        List<SQLParser.ValueEntryContext> values = ctx.valueEntry();
+        ArrayList<String> valueStringList = new ArrayList<>();
+        for (SQLParser.ValueEntryContext value: values) {
+          for (int i = 0; i < value.literalValue().size(); i++) {
+            String valueString = value.literalValue(i).getText();
+            valueStringList.add(valueString);
+          }
+        }
+
+        // get selected columns
+        List<SQLParser.ColumnNameContext> columnName = ctx.columnName();
+        ArrayList<Column> allColumns = table.columns;
+        ArrayList<Column> selectedColumns = new ArrayList<>();
+        if(columnName.size() == 0) {
+          selectedColumns = new ArrayList<>(allColumns);
+        } else {
+          for(int i = 0 ; i < columnName.size(); i++){
+            for (int j = 0; j < allColumns.size(); j++){
+              if (columnName.get(i).getText().equals(allColumns.get(j).getColumnName())) {
+                selectedColumns.add(allColumns.get(j));
+                break;
+              }
+            }
+          }
+        }
+
+        if (valueStringList.size() != selectedColumns.size()) {
+          throw new SchemaLengthMismatchException(selectedColumns.size(), valueStringList.size(), "wrong insert operation (columns unmatched)!");
+        }
+
+        ArrayList<Entry> entries = new ArrayList<>();
+        for (int i = 0; i < selectedColumns.size(); i++){
+          Column column = selectedColumns.get(i);
+          Entry entry = column.parseEntry(valueStringList.get(i));
+          entries.add(entry);
+        }
+        Row newRow = new Row(entries);
+        table.insert(newRow);
+    } catch (Exception e) {
+      e.printStackTrace();
+      // throw exception
     }
   }
 

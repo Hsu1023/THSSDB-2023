@@ -109,6 +109,12 @@ public class IServiceHandler implements IService.Iface {
         String tbName = dropTBPlan.getTableName();
         manager.deleteTable(tbName);
         return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case INSERT:
+        System.out.println("[DEBUG] " + plan);
+        InsertPlan insertPlan = (InsertPlan) plan;
+        manager.insert(insertPlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
       default:
     }
     return null;
