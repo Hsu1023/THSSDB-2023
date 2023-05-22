@@ -73,8 +73,24 @@ public class Table implements Iterable<Row> {
     }
   }
 
-  public void delete() {
-    // TODO
+  public Boolean contains(Row row) {
+    return index.contains(row.getEntries().get(primaryIndex));
+  }
+
+  public void delete(Row row) {
+    lock.writeLock().lock();
+    try {
+      if (!this.contains(row)) {
+        throw new RowNotExistException();
+      }
+      index.remove(row.getEntries().get(primaryIndex));
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  public int getRowSize() {
+    return index.size();
   }
 
   public void update() {

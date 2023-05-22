@@ -65,4 +65,9 @@ public class ThssDBSQLVisitor extends SQLBaseVisitor<LogicalPlan> {
     return new InsertPlan(ctx);
   }
   // TODO: parser to more logical plan
+
+  @Override
+  public LogicalPlan visitDeleteStmt(SQLParser.DeleteStmtContext ctx) {
+    return new DeletePlan(ctx);
+  }
 }

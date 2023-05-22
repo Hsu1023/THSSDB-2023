@@ -1,8 +1,6 @@
 package cn.edu.thssdb.schema;
 
-import cn.edu.thssdb.exception.DatabaseNotExistException;
-import cn.edu.thssdb.exception.DuplicateKeyException;
-import cn.edu.thssdb.exception.SchemaLengthMismatchException;
+import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
@@ -258,6 +256,9 @@ public class Manager {
       // get table
       Database database = getAndAssumeCurrentDatabase();
       String tableName = ctx.tableName().children.get(0).toString();
+      if (!curDatabase.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
       Table table = database.get(tableName);
 
       // get value list
@@ -270,7 +271,7 @@ public class Manager {
         }
       }
 
-      // get selected columns
+      // get selected columns (match insert names of columns and table columns)
       List<SQLParser.ColumnNameContext> columnName = ctx.columnName();
       ArrayList<Column> allColumns = table.columns;
       ArrayList<Column> selectedColumns = new ArrayList<>();
@@ -302,9 +303,67 @@ public class Manager {
       }
       Row newRow = new Row(entries);
       table.insert(newRow);
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
     } catch (Exception e) {
       e.printStackTrace();
       // throw exception
+    }
+  }
+
+  public void delete(SQLParser.DeleteStmtContext ctx) {
+    try {
+      // get table
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString();
+      if (!database.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
+      Table table = database.get(tableName);
+      ArrayList<Column> columns = table.columns;
+
+      Iterator<Row> rowIterator = table.iterator();
+
+      if (ctx.K_WHERE() == null) {
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          table.delete(curRow);
+        }
+      } else {
+        SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
+        SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
+        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        SQLParser.ComparatorContext comparator = condition.comparator();
+        SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
+        String value = valueComparer.literalValue().getText();
+        int columnIndex = -1;
+        Column curColumn = null;
+        for (int i = 0; i < columns.size(); i++)
+          if (columns.get(i).getName().equals(attr)) {
+            columnIndex = i;
+            curColumn = columns.get(i);
+            break;
+          }
+        if (columnIndex == -1) {
+          throw new AttributeNotExistException();
+        }
+
+        Entry comparedEntry = curColumn.parseEntry(value);
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          Entry curEntry = curRow.getEntries().get(columnIndex);
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0))
+            table.delete(curRow);
+        }
+      }
+
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+    } catch (Exception e) {
+      e.printStackTrace();
     }
   }
 

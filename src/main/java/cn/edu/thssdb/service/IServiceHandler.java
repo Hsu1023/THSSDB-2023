@@ -115,6 +115,13 @@ public class IServiceHandler implements IService.Iface {
         InsertPlan insertPlan = (InsertPlan) plan;
         manager.insert(insertPlan.getCtx());
         return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case DELETE:
+        System.out.println("[DEBUG] " + plan);
+        DeletePlan deletePlan = (DeletePlan) plan;
+        manager.delete(deletePlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
       default:
     }
     return null;
