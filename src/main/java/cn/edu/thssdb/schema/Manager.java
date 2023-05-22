@@ -356,7 +356,7 @@ public class Manager {
               || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
               || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
               || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
-              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0))
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0))
             table.delete(curRow);
         }
       }
