@@ -43,7 +43,7 @@ public class Column implements Comparable<Column> {
   public ColumnType getColumnType() {
     return this.type;
   }
-
+  public int getPrimary(){return this.primary;}
   public boolean isPrimary() {
     return this.primary == 1;
   }

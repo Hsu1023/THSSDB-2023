@@ -3,6 +3,7 @@ package cn.edu.thssdb.service;
 import cn.edu.thssdb.plan.LogicalGenerator;
 import cn.edu.thssdb.plan.LogicalPlan;
 import cn.edu.thssdb.plan.impl.*;
+import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
 import cn.edu.thssdb.rpc.thrift.DisconnectReq;
@@ -14,6 +15,7 @@ import cn.edu.thssdb.rpc.thrift.GetTimeResp;
 import cn.edu.thssdb.rpc.thrift.IService;
 import cn.edu.thssdb.rpc.thrift.Status;
 import cn.edu.thssdb.schema.Manager;
+import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
@@ -115,6 +117,24 @@ public class IServiceHandler implements IService.Iface {
         InsertPlan insertPlan = (InsertPlan) plan;
         manager.insert(insertPlan.getCtx());
         return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case SELECT:
+        System.out.println("[DEBUG] " + plan);
+        SelectPlan selectPlan = (SelectPlan) plan;
+        QueryResult queryResult = manager.select(selectPlan.getCtx());
+        ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
+        for (Row row: queryResult.results)
+          resp.addToRowList(row.toStringList());
+        if (queryResult.results.size() == 0)
+        {
+          List<List<String>> empty_list = new ArrayList<>();
+          resp.setRowList(empty_list);
+        }
+        for (String columnName: queryResult.getColumnNames())
+          resp.addToColumnsList(columnName);
+
+        return resp;
+
       default:
     }
     return null;

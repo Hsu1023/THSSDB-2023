@@ -35,4 +35,12 @@ public class Row implements Serializable {
     for (Entry e : entries) sj.add(e.toString());
     return sj.toString();
   }
+
+  public ArrayList<String> toStringList() {
+    ArrayList<String> valueList = new ArrayList<>();
+    if (entries == null) return valueList;
+    for (Entry entry : this.entries)
+      valueList.add(entry.toString());
+    return valueList;
+  }
 }

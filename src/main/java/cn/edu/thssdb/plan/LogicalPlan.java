@@ -21,6 +21,7 @@ public abstract class LogicalPlan {
     CREATE_TB,
     SHOW_TB,
     DROP_TB,
-    INSERT
+    INSERT,
+    SELECT
   }
 }

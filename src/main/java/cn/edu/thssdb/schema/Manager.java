@@ -3,6 +3,8 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.exception.DatabaseNotExistException;
 import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.SchemaLengthMismatchException;
+import cn.edu.thssdb.query.QueryResult;
+import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
@@ -249,7 +251,7 @@ public class Manager {
     }
   }
 
-  private Database getAndAssumeCurrentDatabase() {
+  public Database getAndAssumeCurrentDatabase() {
     if (curDatabase == null) {
       System.out.println("[DEBUG] " + "current db is null");
       throw new DatabaseNotExistException();
@@ -309,6 +311,30 @@ public class Manager {
     } catch (Exception e) {
       e.printStackTrace();
       // throw exception
+    }
+  }
+
+
+
+  public QueryResult select(SQLParser.SelectStmtContext ctx) {
+    try {
+      // TODO: 多表，where
+      // 先处理from子句
+      List<SQLParser.TableQueryContext> querys = ctx.tableQuery();
+      // 有多个逗号隔开的table,先分别算出每一个（目前认为只有一个）
+      QueryTable queryResult = null;
+      for(SQLParser.TableQueryContext query : querys) {
+        queryResult = QueryTable.fromQueryCtx(query);
+      }
+      ArrayList<String> columnNameList = new ArrayList<>();
+      for (Column column: queryResult.columns)
+        columnNameList.add(column.getName());
+
+      return new QueryResult(queryResult.rows, columnNameList);
+
+
+    } catch (Exception e){
+      return new QueryResult(e.getMessage());
     }
   }
 
