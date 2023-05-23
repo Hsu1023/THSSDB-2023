@@ -7,7 +7,7 @@ public class DeletePlan extends LogicalPlan {
   private SQLParser.DeleteStmtContext ctx;
 
   public DeletePlan(SQLParser.DeleteStmtContext ctx) {
-    super(LogicalPlan.LogicalPlanType.DELETE);
+    super(LogicalPlanType.DELETE);
     this.ctx = ctx;
   }
 

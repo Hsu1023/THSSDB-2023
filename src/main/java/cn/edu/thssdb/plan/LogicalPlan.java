@@ -22,8 +22,8 @@ public abstract class LogicalPlan {
     SHOW_TB,
     DROP_TB,
     INSERT,
+    UPDATE,
 
     DELETE,
-    UPDATE,
   }
 }

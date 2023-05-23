@@ -56,6 +56,15 @@ public class Table implements Iterable<Row> {
     recover();
   }
 
+  public int getColumnIndexByName(String name) {
+    for (int i = 0; i < columns.size(); i++) {
+      if (columns.get(i).getName().equals(name)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   private void recover() {
     // TODO
   }
@@ -93,8 +102,18 @@ public class Table implements Iterable<Row> {
     return index.size();
   }
 
-  public void update() {
-    // TODO
+  public void update(Row oldRow, Row newRow) {
+    this.lock.writeLock().lock();
+    try {
+      checkRowValidInTable(newRow);
+      Entry keyEntry = oldRow.getEntries().get(primaryIndex);
+      if (!keyEntry.equals(newRow.getEntries().get(primaryIndex)) && containsRow(newRow)) {
+        throw new DuplicateKeyException();
+      }
+      index.update(keyEntry, newRow);
+    } finally {
+      this.lock.writeLock().unlock();
+    }
   }
 
   private void checkRowValidInTable(Row row) {

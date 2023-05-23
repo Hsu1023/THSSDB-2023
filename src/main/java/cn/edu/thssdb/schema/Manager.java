@@ -367,6 +367,75 @@ public class Manager {
     }
   }
 
+  public void update(SQLParser.UpdateStmtContext ctx) {
+    try {
+      // get table
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString();
+      if (!database.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
+      Table table = database.get(tableName);
+      ArrayList<Column> columns = table.columns;
+
+      Iterator<Row> rowIterator = table.iterator();
+
+      String columnName = ctx.columnName().getText();
+      int updateIndex = table.getColumnIndexByName(columnName);
+      Column selectedColumn = columns.get(updateIndex);
+      Entry attrValue =
+          selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
+
+      if (ctx.K_WHERE() == null) {
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
+          oldRowEntries.set(updateIndex, attrValue);
+          Row newRow = new Row(oldRowEntries);
+          table.update(curRow, newRow);
+        }
+      } else {
+        SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
+        SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
+        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        SQLParser.ComparatorContext comparator = condition.comparator();
+        SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
+        String value = valueComparer.literalValue().getText();
+        int columnIndex = -1;
+        Column curColumn = null;
+        for (int i = 0; i < columns.size(); i++)
+          if (columns.get(i).getName().equals(attr)) {
+            columnIndex = i;
+            curColumn = columns.get(i);
+            break;
+          }
+        if (columnIndex == -1) {
+          throw new AttributeNotExistException();
+        }
+
+        Entry comparedEntry = curColumn.parseEntry(value);
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          Entry curEntry = curRow.getEntries().get(columnIndex);
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0)) {
+            ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
+            oldRowEntries.set(updateIndex, attrValue);
+            Row newRow = new Row(oldRowEntries);
+            table.update(curRow, newRow);
+          }
+        }
+      }
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
   public String showTable(String tableName) {
     try {
       if (curDatabase == null) {

@@ -53,6 +53,7 @@ public class IServiceHandler implements IService.Iface {
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
     // TODO: implement execution logic
+    //    System.out.println(req.statement);
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
     switch (plan.getType()) {
@@ -120,6 +121,12 @@ public class IServiceHandler implements IService.Iface {
         System.out.println("[DEBUG] " + plan);
         DeletePlan deletePlan = (DeletePlan) plan;
         manager.delete(deletePlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case UPDATE:
+        System.out.println("[DEBUG] " + plan);
+        UpdatePlan updatePlan = (UpdatePlan) plan;
+        manager.update(updatePlan.getCtx());
         return new ExecuteStatementResp(StatusUtil.success(), false);
 
       default:
