@@ -58,18 +58,101 @@ public class QueryTable implements Iterator<Row> {
     return new QueryTable();
   }
 
+  public static int getIndexOfAttrName(ArrayList<Column> columns, String AttrName) {
+    for (int i = 0; i < columns.size(); ++i) {
+      if (columns.get(i).getColumnName().equals(AttrName)) {
+        return i;
+      }
+    }
+    for (int i = 0; i < columns.size(); ++i) {
+      String columnName = columns.get(i).getColumnName().split("\\.", 2)[1]; // student.name => name
+      if (columnName.equals(AttrName)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   public static ArrayList<Row> getRowsSatisfyWhereClause(
       Iterator<Row> rowIterator,
       ArrayList<Column> columns,
       SQLParser.ConditionContext updateCondition) {
 
-    // TODO: Partial Columns
-    // TODO: Condition Query
+    String attrName = null;
+    String attrValue = null;
+    int attrIndex = 0;
+    SQLParser.ComparatorContext comparator = null;
+    Entry compareValue = null;
     ArrayList<Row> rows = new ArrayList<Row>();
+
+    if (updateCondition != null) {
+      attrName =
+          updateCondition
+              .expression(0)
+              .comparer()
+              .columnFullName()
+              .columnName()
+              .getText()
+              .toLowerCase();
+      attrValue = updateCondition.expression(1).comparer().literalValue().getText();
+      attrIndex = getIndexOfAttrName(columns, attrName);
+      comparator = updateCondition.comparator();
+      compareValue = columns.get(attrIndex).parseEntry(attrValue);
+    }
+
     while (rowIterator.hasNext()) {
       Row row = rowIterator.next();
-      rows.add(row);
+      Entry columnValue = row.getEntries().get(attrIndex);
+      boolean flag = false;
+      if (comparator == null) {
+        flag = true;
+      } else if (comparator.LT() != null) {
+        if (columnValue.compareTo(compareValue) < 0) flag = true;
+      } else if (comparator.GT() != null) {
+        if (columnValue.compareTo(compareValue) > 0) flag = true;
+      } else if (comparator.LE() != null) {
+        if (columnValue.compareTo(compareValue) <= 0) flag = true;
+      } else if (comparator.GE() != null) {
+        if (columnValue.compareTo(compareValue) >= 0) flag = true;
+      } else if (comparator.EQ() != null) {
+        if (columnValue.compareTo(compareValue) == 0) flag = true;
+      } else if (comparator.NE() != null) {
+        if (columnValue.compareTo(compareValue) != 0) flag = true;
+      }
+      if (flag) {
+        rows.add(row);
+      }
     }
     return rows;
+  }
+
+  public void filteredOnColumns(ArrayList<Integer> columnIndexs) {
+    ArrayList<Row> newRows = new ArrayList<Row>();
+    ArrayList<Column> newColumns = new ArrayList<Column>();
+
+    Iterator<Row> rowIterator = rows.iterator();
+    while (rowIterator.hasNext()) {
+      Row row = rowIterator.next();
+      ArrayList<Entry> finalRowEntries = new ArrayList<>();
+      for (int index : columnIndexs) {
+        finalRowEntries.add(row.getEntries().get(index));
+      }
+      newRows.add(new Row(finalRowEntries));
+    }
+
+    for (int index : columnIndexs) newColumns.add(columns.get(index));
+
+    rows = newRows;
+    columns = newColumns;
+  }
+
+  public QueryResult toQueryResult() {
+    ArrayList<String> columnNameList = new ArrayList<>();
+    for (Column column : columns) columnNameList.add(column.getName());
+    return new QueryResult(rows, columnNameList);
+  }
+
+  public Iterator<Row> iterator() {
+    return rows.iterator();
   }
 }

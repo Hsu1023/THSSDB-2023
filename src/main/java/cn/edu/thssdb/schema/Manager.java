@@ -440,20 +440,40 @@ public class Manager {
 
   public QueryResult select(SQLParser.SelectStmtContext ctx) {
     try {
-      // TODO: 多表，where
-      // 先处理from子句
-      List<SQLParser.TableQueryContext> querys = ctx.tableQuery();
-      // 有多个逗号隔开的table,先分别算出每一个（目前认为只有一个）
-      QueryTable queryResult = null;
-      for (SQLParser.TableQueryContext query : querys) {
-        queryResult = QueryTable.fromQueryCtx(query);
-      }
-      ArrayList<String> columnNameList = new ArrayList<>();
-      for (Column column : queryResult.columns) columnNameList.add(column.getName());
+      // TODO: lock, from multiple tables
 
-      return new QueryResult(queryResult.rows, columnNameList);
+      // from TABLE
+      QueryTable queryTable = QueryTable.fromQueryCtx(ctx.tableQuery(0));
+
+      // where CONDITION
+      if (ctx.K_WHERE() != null) {
+        SQLParser.ConditionContext selectCondition = ctx.multipleCondition().condition();
+        ArrayList<Row> newRows =
+            QueryTable.getRowsSatisfyWhereClause(
+                queryTable.iterator(), queryTable.columns, selectCondition);
+        queryTable.rows = newRows;
+      }
+
+      // select ATTR
+      ArrayList<Integer> columnIndexs = new ArrayList<>();
+      ArrayList<String> finalColumnNames = new ArrayList<>();
+      boolean isSelectAll = false;
+      for (SQLParser.ResultColumnContext columnContext : ctx.resultColumn()) {
+        if (columnContext.getText().equals("*")) {
+          isSelectAll = true;
+          break;
+        }
+        String columnName = columnContext.columnFullName().getText().toLowerCase();
+        finalColumnNames.add(columnName);
+        int index = QueryTable.getIndexOfAttrName(queryTable.columns, columnName);
+        columnIndexs.add(index);
+      }
+      if (!isSelectAll) queryTable.filteredOnColumns(columnIndexs);
+
+      return queryTable.toQueryResult();
 
     } catch (Exception e) {
+      e.printStackTrace();
       return new QueryResult(e.getMessage());
     }
   }
