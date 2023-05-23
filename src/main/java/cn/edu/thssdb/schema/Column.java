@@ -54,6 +54,10 @@ public class Column implements Comparable<Column> {
     return this.type;
   }
 
+  public int getPrimary() {
+    return this.primary;
+  }
+
   public boolean isPrimary() {
     return this.primary == 1;
   }
