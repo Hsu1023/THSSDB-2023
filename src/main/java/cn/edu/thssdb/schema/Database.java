@@ -32,6 +32,7 @@ public class Database {
   private void persist() {
     //    String saveFolderPath = getTablesFolderPath();
     try {
+      lock.writeLock().lock();
       for (String tableName : tables.keySet()) {
         Table table = tables.get(tableName);
         String savePath = table.getMetaDataPath();
@@ -44,6 +45,8 @@ public class Database {
     } catch (Exception e) {
       e.printStackTrace();
       // throw exception
+    } finally {
+      lock.writeLock().unlock();
     }
   }
 
@@ -106,34 +109,34 @@ public class Database {
         File[] tableFiles = tableFile.listFiles();
         for (File file : tableFiles) { // table内部folder
           if (file.getName().equals("_meta")) {
-            try {
-              String tableName = tableFile.getName();
-              FileReader fileReader = new FileReader(file);
-              BufferedReader reader = new BufferedReader(fileReader);
-              ArrayList<Column> columnList = new ArrayList<>();
-              String readLine;
-              while ((readLine = reader.readLine()) != null)
-                columnList.add(Column.toColumn(readLine));
-              Table table =
-                  new Table(
-                      name,
-                      tableName,
-                      columnList.toArray(new Column[columnList.size()]),
-                      getTablesFolderPath());
-              tables.put(tableName, table);
+            String tableName = tableFile.getName();
+            FileReader fileReader = new FileReader(file);
+            BufferedReader reader = new BufferedReader(fileReader);
+            ArrayList<Column> columnList = new ArrayList<>();
+            String readLine;
+            while ((readLine = reader.readLine()) != null)
+              columnList.add(Column.toColumn(readLine));
+            Table table =
+                new Table(
+                    name,
+                    tableName,
+                    columnList.toArray(new Column[columnList.size()]),
+                    getTablesFolderPath());
+            tables.put(tableName, table);
 
-              System.out.println("[DEBUG] " + "recover " + tableName);
-              reader.close();
-              break;
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
+            System.out.println("[DEBUG] " + "recover " + tableName);
+            reader.close();
+            break;
           }
         }
       }
+    } catch (Exception e) {
+      e.printStackTrace();
     } finally {
       lock.writeLock().unlock();
     }
+
+
   }
 
   public void quit() {

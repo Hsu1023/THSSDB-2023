@@ -6,7 +6,9 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
+import javafx.scene.control.Tab;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -111,6 +113,21 @@ public class Manager {
       // throw exception
     }
   }
+
+  public void quit() {
+    try{
+      for (String i: databases.keySet()){
+        Database database = databases.get(i);
+        for (String j: database.tables.keySet()){
+          Table table = database.tables.get(j);
+          table.persist();
+        }
+      }
+    } catch (Exception e){
+      e.printStackTrace();
+    }
+  }
+
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
     try {

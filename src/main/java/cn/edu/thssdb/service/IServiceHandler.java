@@ -45,6 +45,8 @@ public class IServiceHandler implements IService.Iface {
 
   @Override
   public DisconnectResp disconnect(DisconnectReq req) throws TException {
+    Manager manager = Manager.getInstance();
+    manager.quit();
     return new DisconnectResp(StatusUtil.success());
   }
 
