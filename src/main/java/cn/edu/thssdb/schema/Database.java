@@ -78,6 +78,13 @@ public class Database {
       if (!tableMetaFile.exists() || !tableMetaFile.isFile() || !tableMetaFile.delete()) {
         throw new RuntimeException();
       }
+
+      String tableDataPath = table.getDataPath();
+      File tableDataFile = new File(tableDataPath);
+      if (tableDataFile.exists() && (!tableDataFile.isFile() || !tableDataFile.delete())) {
+        throw new RuntimeException();
+      }
+
       String tableFolerPath = table.getFolderPath();
       File tableFolderPath = new File(tableFolerPath);
       if (!tableFolderPath.exists()

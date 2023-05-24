@@ -359,12 +359,13 @@ public class Manager {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
           Entry curEntry = curRow.getEntries().get(columnIndex);
-          if ((comparator.EQ() != null && comparedEntry.compareTo(curEntry) == 0)
-              || (comparator.NE() != null && comparedEntry.compareTo(curEntry) != 0)
-              || (comparator.GE() != null && comparedEntry.compareTo(curEntry) >= 0)
-              || (comparator.LE() != null && comparedEntry.compareTo(curEntry) <= 0)
-              || (comparator.GT() != null && comparedEntry.compareTo(curEntry) < 0)
-              || (comparator.LT() != null && comparedEntry.compareTo(curEntry) > 0))
+          if (curEntry.value == null) continue;
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) > 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0))
             table.delete(curRow);
         }
       }
@@ -425,12 +426,13 @@ public class Manager {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
           Entry curEntry = curRow.getEntries().get(columnIndex);
-          if ((comparator.EQ() != null && comparedEntry.compareTo(curEntry) == 0)
-              || (comparator.NE() != null && comparedEntry.compareTo(curEntry) != 0)
-              || (comparator.GE() != null && comparedEntry.compareTo(curEntry) >= 0)
-              || (comparator.LE() != null && comparedEntry.compareTo(curEntry) <= 0)
-              || (comparator.GT() != null && comparedEntry.compareTo(curEntry) < 0)
-              || (comparator.LT() != null && comparedEntry.compareTo(curEntry) > 0)) {
+          if (curEntry.value == null) continue;
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) > 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
             ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
             oldRowEntries.set(updateIndex, attrValue);
             Row newRow = new Row(oldRowEntries);

@@ -115,11 +115,15 @@ public class Table implements Iterable<Row> {
     this.lock.writeLock().lock();
     try {
       checkRowValidInTable(newRow);
-      Entry keyEntry = oldRow.getEntries().get(primaryIndex);
-      if (!keyEntry.equals(newRow.getEntries().get(primaryIndex)) && containsRow(newRow)) {
+      Entry oldKeyEntry = oldRow.getEntries().get(primaryIndex);
+      Entry newKeyEntry = newRow.getEntries().get(primaryIndex);
+      if (!oldKeyEntry.equals(newKeyEntry) && containsRow(newRow)) {
         throw new DuplicateKeyException();
       }
-      index.update(keyEntry, newRow);
+      //      index.update(keyEntry, newRow);
+      index.remove(oldKeyEntry);
+      index.put(newKeyEntry, newRow);
+
     } finally {
       this.lock.writeLock().unlock();
     }
