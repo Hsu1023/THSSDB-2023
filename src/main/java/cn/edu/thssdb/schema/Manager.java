@@ -128,132 +128,119 @@ public class Manager {
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
     try {
-      if (curDatabase == null) {
-        System.out.println("[DEBUG] " + "current db is null");
-        throw new DatabaseNotExistException();
-      } else {
-        String tableName =
-            ctx.tableName().children.get(0).toString(); // create table tableName tableName
-        int n = ctx.getChildCount();
-        ArrayList<Column> columnItems = new ArrayList<>();
-        //    for (int i = 0; i < n; i += 1) {
-        //      System.out.println(ctx.getChild(i));
-        //    }
-        for (int i = 4; i < n; i += 2) { // 对每个数据项的type进行分析
-          // 如果是普通数据项
-          if (ctx.getChild(i)
-              .getClass()
-              .getName()
-              .equals("cn.edu.thssdb.sql.SQLParser$ColumnDefContext")) {
-            // 抽出数据项名字
-            String columnName =
-                ((SQLParser.ColumnDefContext) ctx.getChild(i))
-                    .columnName()
-                    .children
-                    .get(0)
-                    .toString()
-                    .toLowerCase(Locale.ROOT);
-            // 抽出数据项类别
-            String typeName =
-                ((SQLParser.ColumnDefContext) ctx.getChild(i))
-                    .typeName()
-                    .children
-                    .get(0)
-                    .toString();
-            // 分析数据项类别
-            ColumnType type = ColumnType.INT;
-            if (typeName.toLowerCase().equals("int")) {
-              type = ColumnType.INT;
-            } else if (typeName.toLowerCase().equals("long")) {
-              type = ColumnType.LONG;
-            } else if (typeName.toLowerCase().equals("float")) {
-              type = ColumnType.FLOAT;
-            } else if (typeName.toLowerCase().equals("double")) {
-              type = ColumnType.DOUBLE;
-            } else if (typeName.toLowerCase().equals("string")) {
-              type = ColumnType.STRING;
-            }
-            // 分析类别长度限制
-            int length = 128;
-            try {
-              length =
-                  Integer.parseInt(
-                      ((SQLParser.ColumnDefContext) ctx.getChild(i))
-                          .typeName()
-                          .children
-                          .get(2)
-                          .toString());
-            } catch (Exception e) {
-
-            }
-            // 分析类别Not Null限制
-            Boolean notNull = false;
-            int constraint_num =
-                ((SQLParser.ColumnDefContext) ctx.getChild(i)).columnConstraint().size();
-            for (int j = 0; j < constraint_num; j++) {
-              if (((SQLParser.ColumnDefContext) ctx.getChild(i))
-                      .columnConstraint(j)
-                      .children
-                      .get(0)
-                      .toString()
-                      .toLowerCase()
-                      .equals("not")
-                  && ((SQLParser.ColumnDefContext) ctx.getChild(i))
-                      .columnConstraint(j)
-                      .children
-                      .get(1)
-                      .toString()
-                      .toLowerCase()
-                      .equals("null")) {
-                notNull = true;
-              }
-            }
-            columnItems.add(new Column(columnName, type, 0, notNull, length)); // 新增column Item
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString(); // create table tableName
+      int n = ctx.getChildCount();
+      ArrayList<Column> columnItems = new ArrayList<>();
+      //    for (int i = 0; i < n; i += 1) {
+      //      System.out.println(ctx.getChild(i));
+      //    }
+      for (int i = 4; i < n; i += 2) { // 对每个数据项的type进行分析
+        // 如果是普通数据项
+        if (ctx.getChild(i)
+            .getClass()
+            .getName()
+            .equals("cn.edu.thssdb.sql.SQLParser$ColumnDefContext")) {
+          // 抽出数据项名字
+          String columnName =
+              ((SQLParser.ColumnDefContext) ctx.getChild(i))
+                  .columnName()
+                  .children
+                  .get(0)
+                  .toString()
+                  .toLowerCase(Locale.ROOT);
+          // 抽出数据项类别
+          String typeName =
+              ((SQLParser.ColumnDefContext) ctx.getChild(i)).typeName().children.get(0).toString();
+          // 分析数据项类别
+          ColumnType type = ColumnType.INT;
+          if (typeName.toLowerCase().equals("int")) {
+            type = ColumnType.INT;
+          } else if (typeName.toLowerCase().equals("long")) {
+            type = ColumnType.LONG;
+          } else if (typeName.toLowerCase().equals("float")) {
+            type = ColumnType.FLOAT;
+          } else if (typeName.toLowerCase().equals("double")) {
+            type = ColumnType.DOUBLE;
+          } else if (typeName.toLowerCase().equals("string")) {
+            type = ColumnType.STRING;
           }
-          // 如果是primary key约束项
-          else {
-            if (((SQLParser.TableConstraintContext) ctx.getChild(i))
+          // 分析类别长度限制
+          int length = 128;
+          try {
+            length =
+                Integer.parseInt(
+                    ((SQLParser.ColumnDefContext) ctx.getChild(i))
+                        .typeName()
+                        .children
+                        .get(2)
+                        .toString());
+          } catch (Exception e) {
+
+          }
+          // 分析类别Not Null限制
+          Boolean notNull = false;
+          int constraint_num =
+              ((SQLParser.ColumnDefContext) ctx.getChild(i)).columnConstraint().size();
+          for (int j = 0; j < constraint_num; j++) {
+            if (((SQLParser.ColumnDefContext) ctx.getChild(i))
+                    .columnConstraint(j)
                     .children
                     .get(0)
                     .toString()
                     .toLowerCase()
-                    .equals("primary")
-                && ((SQLParser.TableConstraintContext) ctx.getChild(i))
+                    .equals("not")
+                && ((SQLParser.ColumnDefContext) ctx.getChild(i))
+                    .columnConstraint(j)
                     .children
                     .get(1)
                     .toString()
                     .toLowerCase()
-                    .equals("key")) {
+                    .equals("null")) {
+              notNull = true;
+            }
+          }
+          columnItems.add(new Column(columnName, type, 0, notNull, length)); // 新增column Item
+        }
+        // 如果是primary key约束项
+        else {
+          if (((SQLParser.TableConstraintContext) ctx.getChild(i))
+                  .children
+                  .get(0)
+                  .toString()
+                  .toLowerCase()
+                  .equals("primary")
+              && ((SQLParser.TableConstraintContext) ctx.getChild(i))
+                  .children
+                  .get(1)
+                  .toString()
+                  .toLowerCase()
+                  .equals("key")) {
 
-              ArrayList<String> primaryKeys = new ArrayList<>();
-              int primaryKeyNum = ctx.getChild(i).getChildCount();
-              for (int j = 3; j < primaryKeyNum; j += 2) {
-                String columnName =
-                    ((SQLParser.ColumnNameContext)
-                            (((SQLParser.TableConstraintContext) ctx.getChild(i)).children.get(j)))
-                        .children
-                        .get(0)
-                        .toString()
-                        .toLowerCase(Locale.ROOT);
-                primaryKeys.add(columnName);
-              }
-              //              System.out.println(primaryKeys);
+            ArrayList<String> primaryKeys = new ArrayList<>();
+            int primaryKeyNum = ctx.getChild(i).getChildCount();
+            for (int j = 3; j < primaryKeyNum; j += 2) {
+              String columnName =
+                  ((SQLParser.ColumnNameContext)
+                          (((SQLParser.TableConstraintContext) ctx.getChild(i)).children.get(j)))
+                      .children
+                      .get(0)
+                      .toString()
+                      .toLowerCase(Locale.ROOT);
+              primaryKeys.add(columnName);
+            }
+            //              System.out.println(primaryKeys);
 
-              int columnNum = columnItems.size();
-              for (int j = 0; j < columnNum; j++) {
-                if (primaryKeys.contains(columnItems.get(j).getName())) {
-                  columnItems.get(j).setPrimary(1);
-                }
+            int columnNum = columnItems.size();
+            for (int j = 0; j < columnNum; j++) {
+              if (primaryKeys.contains(columnItems.get(j).getName())) {
+                columnItems.get(j).setPrimary(1);
               }
             }
           }
         }
-        if (curDatabase == null) {
-          throw new DatabaseNotExistException();
-        } else {
-          curDatabase.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
-        }
       }
+      database.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
     } finally {
 
     }
@@ -494,47 +481,43 @@ public class Manager {
 
   public String showTable(String tableName) {
     try {
-      if (curDatabase == null) {
-        System.out.println("[DEBUG] " + "current db is null");
-        throw new DatabaseNotExistException();
-      } else {
-        Table table = curDatabase.get(tableName);
-        ArrayList<Column> columns = new ArrayList<Column>();
-        int columnNum = table.columns.size();
-        String output = "table " + tableName + "\n";
-        for (int i = 0; i < columnNum; i++) {
-          columns.add(table.columns.get(i));
-        }
-        for (int i = 0; i < columnNum; i++) {
-          Column column = columns.get(i);
-          if (column.getColumnType().toString().toUpperCase(Locale.ROOT).equals("STRING")) {
-            output =
-                output
-                    + column.getColumnName().toString().toLowerCase(Locale.ROOT)
-                    + "("
-                    + column.getMaxLength()
-                    + ")"
-                    + "\t"
-                    + column.getColumnType().toString().toUpperCase(Locale.ROOT)
-                    + "\t";
-          } else {
-            output =
-                output
-                    + column.getColumnName().toString().toLowerCase(Locale.ROOT)
-                    + "\t"
-                    + column.getColumnType().toString().toUpperCase(Locale.ROOT)
-                    + "\t";
-          }
-          if (columns.get(i).isPrimary()) {
-            output = output + "PRIMARY KEY\t";
-          }
-          if (columns.get(i).cantBeNull()) {
-            output = output + "NOT NULL";
-          }
-          output += "\n";
-        }
-        return output + "\n";
+      Database database = getAndAssumeCurrentDatabase();
+      Table table = database.get(tableName);
+      ArrayList<Column> columns = new ArrayList<Column>();
+      int columnNum = table.columns.size();
+      String output = "table " + tableName + "\n";
+      for (int i = 0; i < columnNum; i++) {
+        columns.add(table.columns.get(i));
       }
+      for (int i = 0; i < columnNum; i++) {
+        Column column = columns.get(i);
+        if (column.getColumnType().toString().toUpperCase(Locale.ROOT).equals("STRING")) {
+          output =
+              output
+                  + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                  + "("
+                  + column.getMaxLength()
+                  + ")"
+                  + "\t"
+                  + column.getColumnType().toString().toUpperCase(Locale.ROOT)
+                  + "\t";
+        } else {
+          output =
+              output
+                  + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                  + "\t"
+                  + column.getColumnType().toString().toUpperCase(Locale.ROOT)
+                  + "\t";
+        }
+        if (columns.get(i).isPrimary()) {
+          output = output + "PRIMARY KEY\t";
+        }
+        if (columns.get(i).cantBeNull()) {
+          output = output + "NOT NULL";
+        }
+        output += "\n";
+      }
+      return output + "\n";
     } finally {
 
     }
@@ -542,12 +525,8 @@ public class Manager {
 
   public void deleteTable(String name) {
     try {
-      if (curDatabase == null) {
-        System.out.println("[DEBUG] " + "current db is null");
-        throw new DatabaseNotExistException();
-      } else {
-        curDatabase.dropTable(name);
-      }
+      Database database = getAndAssumeCurrentDatabase();
+      database.dropTable(name);
     } finally {
 
     }
