@@ -1,11 +1,14 @@
 package cn.edu.thssdb.schema;
 
-import cn.edu.thssdb.exception.DatabaseNotExistException;
-import cn.edu.thssdb.exception.DuplicateKeyException;
+import cn.edu.thssdb.exception.*;
+import cn.edu.thssdb.query.QueryResult;
+import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
+import javafx.scene.control.Tab;
 
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -110,6 +113,21 @@ public class Manager {
       // throw exception
     }
   }
+
+  public void quit() {
+    try{
+      for (String i: databases.keySet()){
+        Database database = databases.get(i);
+        for (String j: database.tables.keySet()){
+          Table table = database.tables.get(j);
+          table.persist();
+        }
+      }
+    } catch (Exception e){
+      e.printStackTrace();
+    }
+  }
+
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
     try {
@@ -233,18 +251,247 @@ public class Manager {
             }
           }
         }
-        Column[] columns = new Column[columnItems.size()];
-        for (int i = 0; i < columnItems.size(); i++) {
-          columns[i] = columnItems.get(i);
-        }
         if (curDatabase == null) {
           throw new DatabaseNotExistException();
         } else {
-          curDatabase.create(tableName, columns);
+          curDatabase.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
         }
       }
     } finally {
 
+    }
+  }
+
+  public Database getAndAssumeCurrentDatabase() {
+    if (curDatabase == null) {
+      System.out.println("[DEBUG] " + "current db is null");
+      throw new DatabaseNotExistException();
+    }
+    return curDatabase;
+  }
+
+  public void insert(SQLParser.InsertStmtContext ctx) {
+    try {
+      // get table
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString();
+      if (!curDatabase.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
+      Table table = database.get(tableName);
+
+      // get value list
+      List<SQLParser.ValueEntryContext> values = ctx.valueEntry();
+      ArrayList<String> valueStringList = new ArrayList<>();
+      for (SQLParser.ValueEntryContext value : values) {
+        for (int i = 0; i < value.literalValue().size(); i++) {
+          String valueString = value.literalValue(i).getText();
+          valueStringList.add(valueString);
+        }
+      }
+
+      // get selected columns (match insert names of columns and table columns)
+      List<SQLParser.ColumnNameContext> columnName = ctx.columnName();
+      ArrayList<Column> allColumns = table.columns;
+      ArrayList<Column> selectedColumns = new ArrayList<>();
+      if (columnName.size() == 0) {
+        selectedColumns = new ArrayList<>(allColumns);
+      } else {
+        for (int i = 0; i < columnName.size(); i++) {
+          for (int j = 0; j < allColumns.size(); j++) {
+            if (columnName.get(i).getText().equals(allColumns.get(j).getColumnName())) {
+              selectedColumns.add(allColumns.get(j));
+              break;
+            }
+          }
+        }
+      }
+
+      if (valueStringList.size() != selectedColumns.size()) {
+        throw new SchemaLengthMismatchException(
+            selectedColumns.size(),
+            valueStringList.size(),
+            "wrong insert operation (columns unmatched)!");
+      }
+
+      ArrayList<Entry> entries = new ArrayList<>();
+      for (int i = 0; i < selectedColumns.size(); i++) {
+        Column column = selectedColumns.get(i);
+        Entry entry = column.parseEntry(valueStringList.get(i));
+        entries.add(entry);
+      }
+      Row newRow = new Row(entries);
+      table.insert(newRow);
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+    } catch (Exception e) {
+      e.printStackTrace();
+      // throw exception
+    }
+  }
+
+  public void delete(SQLParser.DeleteStmtContext ctx) {
+    try {
+      // get table
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString();
+      if (!database.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
+      Table table = database.get(tableName);
+      ArrayList<Column> columns = table.columns;
+
+      Iterator<Row> rowIterator = table.iterator();
+
+      if (ctx.K_WHERE() == null) {
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          table.delete(curRow);
+        }
+      } else {
+        SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
+        SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
+        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        SQLParser.ComparatorContext comparator = condition.comparator();
+        SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
+        String value = valueComparer.literalValue().getText();
+        int columnIndex = -1;
+        Column curColumn = null;
+        for (int i = 0; i < columns.size(); i++)
+          if (columns.get(i).getName().equals(attr)) {
+            columnIndex = i;
+            curColumn = columns.get(i);
+            break;
+          }
+        if (columnIndex == -1) {
+          throw new AttributeNotExistException();
+        }
+
+        Entry comparedEntry = curColumn.parseEntry(value);
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          Entry curEntry = curRow.getEntries().get(columnIndex);
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0))
+            table.delete(curRow);
+        }
+      }
+
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public void update(SQLParser.UpdateStmtContext ctx) {
+    try {
+      // get table
+      Database database = getAndAssumeCurrentDatabase();
+      String tableName = ctx.tableName().children.get(0).toString();
+      if (!database.tables.containsKey(tableName)) {
+        throw new TableNotExistException();
+      }
+      Table table = database.get(tableName);
+      ArrayList<Column> columns = table.columns;
+
+      Iterator<Row> rowIterator = table.iterator();
+
+      String columnName = ctx.columnName().getText();
+      int updateIndex = table.getColumnIndexByName(columnName);
+      Column selectedColumn = columns.get(updateIndex);
+      Entry attrValue =
+          selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
+
+      if (ctx.K_WHERE() == null) {
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
+          oldRowEntries.set(updateIndex, attrValue);
+          Row newRow = new Row(oldRowEntries);
+          table.update(curRow, newRow);
+        }
+      } else {
+        SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
+        SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
+        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        SQLParser.ComparatorContext comparator = condition.comparator();
+        SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
+        String value = valueComparer.literalValue().getText();
+        int columnIndex = -1;
+        Column curColumn = null;
+        for (int i = 0; i < columns.size(); i++)
+          if (columns.get(i).getName().equals(attr)) {
+            columnIndex = i;
+            curColumn = columns.get(i);
+            break;
+          }
+        if (columnIndex == -1) {
+          throw new AttributeNotExistException();
+        }
+
+        Entry comparedEntry = curColumn.parseEntry(value);
+        while (rowIterator.hasNext()) {
+          Row curRow = rowIterator.next();
+          Entry curEntry = curRow.getEntries().get(columnIndex);
+          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
+              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
+              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
+              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
+              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0)) {
+            ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
+            oldRowEntries.set(updateIndex, attrValue);
+            Row newRow = new Row(oldRowEntries);
+            table.update(curRow, newRow);
+          }
+        }
+      }
+      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+  }
+
+  public QueryResult select(SQLParser.SelectStmtContext ctx) {
+    try {
+      // TODO: lock, from multiple tables
+
+      // from TABLE
+      QueryTable queryTable = QueryTable.fromQueryCtx(ctx.tableQuery(0));
+
+      // where CONDITION
+      if (ctx.K_WHERE() != null) {
+        SQLParser.ConditionContext selectCondition = ctx.multipleCondition().condition();
+        ArrayList<Row> newRows =
+            QueryTable.getRowsSatisfyWhereClause(
+                queryTable.iterator(), queryTable.columns, selectCondition);
+        queryTable.rows = newRows;
+      }
+
+      // select ATTR
+      ArrayList<Integer> columnIndexs = new ArrayList<>();
+      ArrayList<String> finalColumnNames = new ArrayList<>();
+      boolean isSelectAll = false;
+      for (SQLParser.ResultColumnContext columnContext : ctx.resultColumn()) {
+        if (columnContext.getText().equals("*")) {
+          isSelectAll = true;
+          break;
+        }
+        String columnName = columnContext.columnFullName().getText().toLowerCase();
+        finalColumnNames.add(columnName);
+        int index = QueryTable.getIndexOfAttrName(queryTable.columns, columnName);
+        columnIndexs.add(index);
+      }
+      if (!isSelectAll) queryTable.filteredOnColumns(columnIndexs);
+
+      return queryTable.toQueryResult();
+
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new QueryResult(e.getMessage());
     }
   }
 
@@ -293,7 +540,7 @@ public class Manager {
         System.out.println("[DEBUG] " + "current db is null");
         throw new DatabaseNotExistException();
       } else {
-        curDatabase.drop(name);
+        curDatabase.dropTable(name);
       }
     } finally {
 
@@ -301,18 +548,25 @@ public class Manager {
   }
 
   private void recover() {
-    File readDatabasesFile = new File(MANAGER_DATAPATH);
-    if (!readDatabasesFile.exists()) return;
+
+    lock.writeLock().lock();
     try {
-      FileReader fileReader = new FileReader(MANAGER_DATAPATH);
-      BufferedReader reader = new BufferedReader(fileReader);
-      String line;
-      while ((line = reader.readLine()) != null) {
-        createDatabaseIfNotExists(line);
+      File readDatabasesFile = new File(MANAGER_DATAPATH);
+      if (!readDatabasesFile.exists()) return;
+      try {
+        FileReader fileReader = new FileReader(MANAGER_DATAPATH);
+        BufferedReader reader = new BufferedReader(fileReader);
+        String line;
+        while ((line = reader.readLine()) != null) {
+          createDatabaseIfNotExists(line);
+        }
+        reader.close();
+      } catch (Exception e) {
+        e.printStackTrace();
+        // throw exception
       }
-    } catch (Exception e) {
-      e.printStackTrace();
-      // throw exception
+    } finally {
+      lock.writeLock().unlock();
     }
   }
 

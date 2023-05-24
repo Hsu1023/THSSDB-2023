@@ -3,6 +3,7 @@ package cn.edu.thssdb.service;
 import cn.edu.thssdb.plan.LogicalGenerator;
 import cn.edu.thssdb.plan.LogicalPlan;
 import cn.edu.thssdb.plan.impl.*;
+import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.rpc.thrift.ConnectReq;
 import cn.edu.thssdb.rpc.thrift.ConnectResp;
 import cn.edu.thssdb.rpc.thrift.DisconnectReq;
@@ -14,6 +15,7 @@ import cn.edu.thssdb.rpc.thrift.GetTimeResp;
 import cn.edu.thssdb.rpc.thrift.IService;
 import cn.edu.thssdb.rpc.thrift.Status;
 import cn.edu.thssdb.schema.Manager;
+import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.StatusUtil;
 import org.apache.thrift.TException;
@@ -43,6 +45,8 @@ public class IServiceHandler implements IService.Iface {
 
   @Override
   public DisconnectResp disconnect(DisconnectReq req) throws TException {
+    Manager manager = Manager.getInstance();
+    manager.quit();
     return new DisconnectResp(StatusUtil.success());
   }
 
@@ -53,6 +57,7 @@ public class IServiceHandler implements IService.Iface {
           StatusUtil.fail("You are not connected. Please connect first."), false);
     }
     // TODO: implement execution logic
+    //    System.out.println(req.statement);
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
     switch (plan.getType()) {
@@ -109,6 +114,38 @@ public class IServiceHandler implements IService.Iface {
         String tbName = dropTBPlan.getTableName();
         manager.deleteTable(tbName);
         return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case INSERT:
+        System.out.println("[DEBUG] " + plan);
+        InsertPlan insertPlan = (InsertPlan) plan;
+        manager.insert(insertPlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case DELETE:
+        System.out.println("[DEBUG] " + plan);
+        DeletePlan deletePlan = (DeletePlan) plan;
+        manager.delete(deletePlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+      case SELECT:
+        System.out.println("[DEBUG] " + plan);
+        SelectPlan selectPlan = (SelectPlan) plan;
+        QueryResult queryResult = manager.select(selectPlan.getCtx());
+        ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
+        for (Row row : queryResult.results) resp.addToRowList(row.toStringList());
+        if (queryResult.results.size() == 0) {
+          List<List<String>> empty_list = new ArrayList<>();
+          resp.setRowList(empty_list);
+        }
+        for (String columnName : queryResult.getColumnNames()) resp.addToColumnsList(columnName);
+
+        return resp;
+
+      case UPDATE:
+        System.out.println("[DEBUG] " + plan);
+        UpdatePlan updatePlan = (UpdatePlan) plan;
+        manager.update(updatePlan.getCtx());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
       default:
     }
     return null;
