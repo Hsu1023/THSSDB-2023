@@ -507,15 +507,24 @@ public class Manager {
         }
         for (int i = 0; i < columnNum; i++) {
           Column column = columns.get(i);
-          output =
-              output
-                  + column.getColumnName().toString().toLowerCase(Locale.ROOT)
-                  + "("
-                  + column.getMaxLength()
-                  + ")"
-                  + "\t"
-                  + column.getColumnType().toString().toUpperCase(Locale.ROOT)
-                  + "\t";
+          if (column.getColumnType().toString().toUpperCase(Locale.ROOT).equals("STRING")) {
+            output =
+                output
+                    + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                    + "("
+                    + column.getMaxLength()
+                    + ")"
+                    + "\t"
+                    + column.getColumnType().toString().toUpperCase(Locale.ROOT)
+                    + "\t";
+          } else {
+            output =
+                output
+                    + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                    + "\t"
+                    + column.getColumnType().toString().toUpperCase(Locale.ROOT)
+                    + "\t";
+          }
           if (columns.get(i).isPrimary()) {
             output = output + "PRIMARY KEY\t";
           }
