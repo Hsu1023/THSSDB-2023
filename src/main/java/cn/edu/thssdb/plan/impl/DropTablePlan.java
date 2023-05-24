@@ -16,6 +16,6 @@ public class DropTablePlan extends LogicalPlan {
 
   @Override
   public String toString() {
-    return "DropTablePlan: database " + tableName;
+    return "DropTablePlan: table " + tableName;
   }
 }
