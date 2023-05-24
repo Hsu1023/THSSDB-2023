@@ -6,9 +6,7 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
-import javafx.scene.control.Tab;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -55,7 +53,7 @@ public class Manager {
         System.out.println("[DEBUG] " + "create db " + name);
       } else {
         System.out.println("[DEBUG] " + "duplicated db " + name);
-        throw new DuplicateKeyException();
+        throw new DuplicateDatabaseException();
       }
     } finally {
       if (change) persistDatabases();
@@ -115,19 +113,18 @@ public class Manager {
   }
 
   public void quit() {
-    try{
-      for (String i: databases.keySet()){
+    try {
+      for (String i : databases.keySet()) {
         Database database = databases.get(i);
-        for (String j: database.tables.keySet()){
+        for (String j : database.tables.keySet()) {
           Table table = database.tables.get(j);
           table.persist();
         }
       }
-    } catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
-
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
     try {

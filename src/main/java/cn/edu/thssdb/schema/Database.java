@@ -135,8 +135,6 @@ public class Database {
     } finally {
       lock.writeLock().unlock();
     }
-
-
   }
 
   public void quit() {
