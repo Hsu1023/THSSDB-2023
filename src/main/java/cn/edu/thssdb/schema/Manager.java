@@ -6,9 +6,7 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
-import javafx.scene.control.Tab;
 
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -115,19 +113,18 @@ public class Manager {
   }
 
   public void quit() {
-    try{
-      for (String i: databases.keySet()){
+    try {
+      for (String i : databases.keySet()) {
         Database database = databases.get(i);
-        for (String j: database.tables.keySet()){
+        for (String j : database.tables.keySet()) {
           Table table = database.tables.get(j);
           table.persist();
         }
       }
-    } catch (Exception e){
+    } catch (Exception e) {
       e.printStackTrace();
     }
   }
-
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
     try {
@@ -370,12 +367,12 @@ public class Manager {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
           Entry curEntry = curRow.getEntries().get(columnIndex);
-          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
-              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
-              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
-              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
-              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
-              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0))
+          if ((comparator.EQ() != null && comparedEntry.compareTo(curEntry) == 0)
+              || (comparator.NE() != null && comparedEntry.compareTo(curEntry) != 0)
+              || (comparator.GE() != null && comparedEntry.compareTo(curEntry) >= 0)
+              || (comparator.LE() != null && comparedEntry.compareTo(curEntry) <= 0)
+              || (comparator.GT() != null && comparedEntry.compareTo(curEntry) < 0)
+              || (comparator.LT() != null && comparedEntry.compareTo(curEntry) > 0))
             table.delete(curRow);
         }
       }
@@ -436,12 +433,12 @@ public class Manager {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
           Entry curEntry = curRow.getEntries().get(columnIndex);
-          if ((comparator.EQ() != null && curEntry.compareTo(comparedEntry) == 0)
-              || (comparator.NE() != null && curEntry.compareTo(comparedEntry) != 0)
-              || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
-              || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
-              || (comparator.GT() != null && curEntry.compareTo(comparedEntry) < 0)
-              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) > 0)) {
+          if ((comparator.EQ() != null && comparedEntry.compareTo(curEntry) == 0)
+              || (comparator.NE() != null && comparedEntry.compareTo(curEntry) != 0)
+              || (comparator.GE() != null && comparedEntry.compareTo(curEntry) >= 0)
+              || (comparator.LE() != null && comparedEntry.compareTo(curEntry) <= 0)
+              || (comparator.GT() != null && comparedEntry.compareTo(curEntry) < 0)
+              || (comparator.LT() != null && comparedEntry.compareTo(curEntry) > 0)) {
             ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
             oldRowEntries.set(updateIndex, attrValue);
             Row newRow = new Row(oldRowEntries);

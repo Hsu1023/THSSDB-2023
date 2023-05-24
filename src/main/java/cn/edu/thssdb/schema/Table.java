@@ -68,14 +68,14 @@ public class Table implements Iterable<Row> {
     try {
       // TODO lock control
       ArrayList<Row> rowsOnDisk = deserialize();
-      for(Row row: rowsOnDisk)
-        this.index.put(row.getEntries().get(this.primaryIndex), row);
-    }finally {
+      for (Row row : rowsOnDisk) this.index.put(row.getEntries().get(this.primaryIndex), row);
+    } finally {
       // TODO lock control
     }
   }
-  public void persist(){
-      serialize();
+
+  public void persist() {
+    serialize();
   }
 
   public void insert(Row row) {
@@ -163,11 +163,10 @@ public class Table implements Iterable<Row> {
         throw new RuntimeException();
       FileOutputStream fileOutputStream = new FileOutputStream(this.getDataPath());
       ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-      for(Row row: this)
-        objectOutputStream.writeObject(row);
+      for (Row row : this) objectOutputStream.writeObject(row);
       objectOutputStream.close();
       fileOutputStream.close();
-    }catch (Exception e){
+    } catch (Exception e) {
       throw new RuntimeException();
     }
   }
@@ -178,20 +177,19 @@ public class Table implements Iterable<Row> {
       if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
         throw new RuntimeException();
       File tableFile = new File(this.getDataPath());
-      if(!tableFile.exists())
-        return new ArrayList<>();
+      if (!tableFile.exists()) return new ArrayList<>();
       FileInputStream fileInputStream = new FileInputStream(this.getDataPath());
       ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
       ArrayList<Row> rowsOnDisk = new ArrayList<>();
       Object tmpObj;
-      while(fileInputStream.available() > 0){
+      while (fileInputStream.available() > 0) {
         tmpObj = objectInputStream.readObject();
         rowsOnDisk.add((Row) tmpObj);
       }
       objectInputStream.close();
       fileInputStream.close();
       return rowsOnDisk;
-    }catch (Exception e){
+    } catch (Exception e) {
       throw new RuntimeException();
     }
   }
@@ -203,6 +201,7 @@ public class Table implements Iterable<Row> {
   public String getMetaDataPath() {
     return this.tableFolderPath + "_meta";
   }
+
   public String getDataPath() {
     return this.tableFolderPath + "_data";
   }
