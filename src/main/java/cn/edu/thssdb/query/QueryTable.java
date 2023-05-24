@@ -106,6 +106,8 @@ public class QueryTable implements Iterator<Row> {
       boolean flag = false;
       if (comparator == null) {
         flag = true;
+      } else if (columnValue.value == null || compareValue.value == null) {
+        flag = false;
       } else if (comparator.LT() != null) {
         if (columnValue.compareTo(compareValue) < 0) flag = true;
       } else if (comparator.GT() != null) {
@@ -119,6 +121,7 @@ public class QueryTable implements Iterator<Row> {
       } else if (comparator.NE() != null) {
         if (columnValue.compareTo(compareValue) != 0) flag = true;
       }
+
       if (flag) {
         rows.add(row);
       }

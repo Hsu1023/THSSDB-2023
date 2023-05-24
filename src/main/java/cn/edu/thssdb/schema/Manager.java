@@ -279,7 +279,7 @@ public class Manager {
       ArrayList<Column> allColumns = table.columns;
       ArrayList<Column> selectedColumns = new ArrayList<>();
       if (columnName.size() == 0) {
-        selectedColumns = new ArrayList<>(allColumns);
+        selectedColumns = new ArrayList<>(allColumns.subList(0, valueStringList.size()));
       } else {
         for (int i = 0; i < columnName.size(); i++) {
           for (int j = 0; j < allColumns.size(); j++) {
@@ -299,9 +299,14 @@ public class Manager {
       }
 
       ArrayList<Entry> entries = new ArrayList<>();
-      for (int i = 0; i < selectedColumns.size(); i++) {
-        Column column = selectedColumns.get(i);
-        Entry entry = column.parseEntry(valueStringList.get(i));
+      System.out.println(allColumns);
+      System.out.println(selectedColumns);
+      for (Column column : allColumns) {
+        int id = selectedColumns.indexOf(column);
+        System.out.println(id);
+        String valueString = "NULL";
+        if (id != -1) valueString = valueStringList.get(id);
+        Entry entry = column.parseEntry(valueString);
         entries.add(entry);
       }
       Row newRow = new Row(entries);
