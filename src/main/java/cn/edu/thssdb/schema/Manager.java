@@ -314,6 +314,7 @@ public class Manager {
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
     } catch (Exception e) {
       e.printStackTrace();
+      throw e;
       // throw exception
     }
   }
@@ -372,6 +373,7 @@ public class Manager {
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
     } catch (Exception e) {
       e.printStackTrace();
+      throw e;
     }
   }
 
@@ -441,6 +443,7 @@ public class Manager {
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
     } catch (Exception e) {
       e.printStackTrace();
+      throw e;
     }
   }
 
@@ -480,7 +483,7 @@ public class Manager {
 
     } catch (Exception e) {
       e.printStackTrace();
-      return new QueryResult(e.getMessage());
+      throw e;
     }
   }
 
