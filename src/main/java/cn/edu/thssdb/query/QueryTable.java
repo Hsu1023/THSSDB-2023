@@ -1,5 +1,6 @@
 package cn.edu.thssdb.query;
 
+import cn.edu.thssdb.exception.AttributeNotExistException;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.sql.SQLParser;
 
@@ -97,6 +98,9 @@ public class QueryTable implements Iterator<Row> {
       attrValue = updateCondition.expression(1).comparer().literalValue().getText();
       attrIndex = getIndexOfAttrName(columns, attrName);
       comparator = updateCondition.comparator();
+      if (attrIndex == -1) {
+        throw new AttributeNotExistException();
+      }
       compareValue = columns.get(attrIndex).parseEntry(attrValue);
     }
 

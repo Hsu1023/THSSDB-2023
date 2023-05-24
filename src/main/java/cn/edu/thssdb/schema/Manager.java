@@ -414,12 +414,13 @@ public class Manager {
         String value = valueComparer.literalValue().getText();
         int columnIndex = -1;
         Column curColumn = null;
-        for (int i = 0; i < columns.size(); i++)
+        for (int i = 0; i < columns.size(); i++) {
           if (columns.get(i).getName().equals(attr)) {
             columnIndex = i;
             curColumn = columns.get(i);
             break;
           }
+        }
         if (columnIndex == -1) {
           throw new AttributeNotExistException();
         }

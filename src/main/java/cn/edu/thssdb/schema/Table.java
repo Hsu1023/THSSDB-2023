@@ -98,9 +98,9 @@ public class Table implements Iterable<Row> {
   public void delete(Row row) {
     lock.writeLock().lock();
     try {
-      if (!this.contains(row)) {
-        throw new RowNotExistException();
-      }
+      //      if (!this.contains(row)) {
+      //        throw new RowNotExistException();
+      //      }
       index.remove(row.getEntries().get(primaryIndex));
     } finally {
       lock.writeLock().unlock();
