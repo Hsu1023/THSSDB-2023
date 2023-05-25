@@ -200,6 +200,9 @@ public class Manager {
               notNull = true;
             }
           }
+          // change length
+          if (type != ColumnType.STRING)
+            length = (type == ColumnType.INT || type == ColumnType.FLOAT) ? 2 : 4;
           columnItems.add(new Column(columnName, type, 0, notNull, length)); // 新增column Item
         }
         // 如果是primary key约束项

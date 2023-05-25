@@ -18,7 +18,6 @@ public class Table implements Iterable<Row> {
   public ArrayList<Column> columns;
   public BPlusTree<Entry, Row> index;
   private int primaryIndex;
-
   private String databaseFolderPath;
   private String tableFolderPath;
 
@@ -27,7 +26,6 @@ public class Table implements Iterable<Row> {
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.columns = new ArrayList<>(Arrays.asList(columns));
-    this.index = new BPlusTree<>();
     this.primaryIndex = -1;
     this.databaseFolderPath = databaseFolderPath;
     this.tableFolderPath = databaseFolderPath + File.separator + tableName + File.separator;
@@ -50,6 +48,9 @@ public class Table implements Iterable<Row> {
       System.out.println("[DEBUG] " + "no primary key");
       throw new NoPrimaryKeyException();
     }
+
+    this.index = new BPlusTree<>(this.getBinPath(), columns, primaryIndex);
+
 
     // TODO initiate lock status.
     recover();
@@ -85,6 +86,8 @@ public class Table implements Iterable<Row> {
       this.checkRowValidInTable(row);
       if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
+
+
     } finally {
       // TODO lock control
       this.lock.writeLock().unlock();
@@ -209,6 +212,8 @@ public class Table implements Iterable<Row> {
   public String getDataPath() {
     return this.tableFolderPath + "_data";
   }
+
+  public String getBinPath() {return this.tableFolderPath + tableName + ".bin";}
 
   private class TableIterator implements Iterator<Row> {
     private Iterator<Pair<Entry, Row>> iterator;

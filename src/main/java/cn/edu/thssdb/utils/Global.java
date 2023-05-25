@@ -1,7 +1,9 @@
 package cn.edu.thssdb.utils;
 
+import java.util.Collections;
+
 public class Global {
-  public static int fanout = 129;
+  public static int fanout = 3;
 
   public static int SUCCESS_CODE = 0;
   public static int FAILURE_CODE = -1;
@@ -21,5 +23,11 @@ public class Global {
 
   public static final String DATA_PATH = "./data";
 
+  public static final int PAGE_SIZE = 409600;
+
+  public static final int INIT_PAGE_NUM = 4;
+
   public static final String LOG_PATH = "./log";
+
+  public static final int ARRAY_LIST_MAX_LENGTH= (int) (3 * Global.fanout) + 1;
 }

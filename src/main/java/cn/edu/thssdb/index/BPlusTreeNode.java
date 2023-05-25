@@ -7,7 +7,8 @@ import java.util.Collections;
 
 abstract class BPlusTreeNode<K extends Comparable<K>, V> {
   ArrayList<K> keys;
-  int nodeSize;
+  public int nodeSize;
+  public int pageId;
 
   abstract V get(K key);
 
@@ -20,6 +21,9 @@ abstract class BPlusTreeNode<K extends Comparable<K>, V> {
   abstract K getFirstLeafKey();
 
   abstract BPlusTreeNode<K, V> split();
+
+
+  public abstract void writeThisToDist();
 
   abstract void merge(BPlusTreeNode<K, V> sibling);
 

@@ -33,7 +33,8 @@ public class BPlusTreeIterator<K extends Comparable<K>, V> implements Iterator<P
           break;
         } else if (node instanceof BPlusTreeInternalNode)
           for (int i = 0; i <= node.size(); i++)
-            queue.add(((BPlusTreeInternalNode<K, V>) node).children.get(i));
+//            queue.add(((BPlusTreeInternalNode<K, V>) node).children.get(i));
+            queue.add(((BPlusTreeInternalNode<K, V>) node).getChildNode(i));
       }
     }
     return buffer.poll();
