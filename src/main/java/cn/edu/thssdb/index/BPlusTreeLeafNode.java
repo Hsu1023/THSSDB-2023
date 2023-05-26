@@ -14,7 +14,6 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
 
   public int nextPageId;
 
-  PageManager pageManager;
 
 
 //  BPlusTreeLeafNode(int size) {
@@ -101,7 +100,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     BPlusTreeLeafNode<K, V> newSiblingNode =
       new BPlusTreeLeafNode<>(to - from, pageManager.newPage(), -1,  pageManager);
 
-    System.out.println("NEW LEAF");
+//    System.out.println("NEW LEAF");
     for (int i = 0; i < to - from; i++) {
       newSiblingNode.keys.set(i, keys.get(i + from));
       newSiblingNode.values.set(i, values.get(i + from));

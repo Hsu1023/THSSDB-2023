@@ -43,7 +43,7 @@ public class BPlusTreeTest {
     values = new ArrayList<>();
     map = new HashMap<>();
     HashSet<Integer> set = new HashSet<>();
-    int size = 1000;
+    int size = 10000;
     Column [] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
@@ -55,8 +55,8 @@ public class BPlusTreeTest {
       double random = Math.random();
       set.add((int) (random * size));
     }
-//    set.add(5);set.add(3);set.add(4);set.add(8);set.add(6);set.add(7);set.add(9);
-    System.out.println("TOTAL" + set.size());
+//    System.out.println("TOTAL" + set.size());
+//    System.out.println("SET" + set);
     for (Integer key : set) {
       int hashCode = key.hashCode();
       keys.add(int2Entry(key));
@@ -70,9 +70,6 @@ public class BPlusTreeTest {
   public void testGet() {
     for (Entry key : keys) {
       int x = map.get(entry2Int(key));
-//      System.out.println();
-//      System.out.println(tree.size);
-      System.out.println(key);
       int y = row2Int( tree.get(key));
       // check if all the results equal
       assertEquals(x, y);
@@ -89,7 +86,6 @@ public class BPlusTreeTest {
     // check if size equals half of origin
     assertEquals(size / 2, tree.size());
     for (int i = 1; i < size; i += 2) {
-//      assertEquals(, tree.get(keys.get(i)));
       int x = map.get(entry2Int(keys.get(i)));
       int y = row2Int (tree.get(keys.get(i)));
       assertEquals(x, y);
@@ -100,10 +96,17 @@ public class BPlusTreeTest {
   public void testIterator() {
     BPlusTreeIterator<Entry, Row> iterator = tree.iterator();
     int c = 0;
+    ArrayList<Integer> _v = new ArrayList<>();
+    for (Row value: values){
+      _v.add((int)value.getEntries().get(0).value);
+    }
     while (iterator.hasNext()) {
-      assertTrue(values.contains(iterator.next().right));
+      int x = (int)iterator.next().right.getEntries().get(0).value;
+      assertTrue(_v.contains(x));
+//      System.out.println(x);
       c++;
     }
+//    System.out.println(_v);
     assertEquals(values.size(), c);
   }
 }

@@ -40,11 +40,7 @@ public class PageManager {
     public int newPage() {
         if (vacantPage.isEmpty()) {
             ++curUsedPageNum;
-            if(curUsedPageNum == 3){
-                curUsedPageNum++;
-                curUsedPageNum--;
-            }
-            System.out.println("USEDPAGENUM" + curUsedPageNum);
+//            System.out.println("USEDPAGENUM" + curUsedPageNum);
             try {
                 if (curUsedPageNum >= totalPageNum)
                     flush();
@@ -99,8 +95,9 @@ public class PageManager {
         }
     }
 
-    BPlusTreeNode readNode(int pageId){
+    public BPlusTreeNode readNode(int pageId){
         BPlusTreeNode res = null;
+        if (pageId < 0) return null;
         try{
             RandomAccessFile raf = new RandomAccessFile(new File(path), "rw");
             raf.seek(pageId * Global.PAGE_SIZE);
@@ -125,7 +122,6 @@ public class PageManager {
             for (int i = 0; i < size; i++){
                 children.set(i, raf.readInt());
                 k.set(i, readKey(raf, columns[primaryIndex]));
-//                System.out.println("WWWWWWWWWWWWWW" + k.get(i));
             }
             children.set(size, raf.readInt());
             return new BPlusTreeInternalNode(size, k, children, pageId, this);

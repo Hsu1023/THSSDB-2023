@@ -11,7 +11,6 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
 
   ArrayList<Integer> childrenPageId;
 
-  PageManager pageManager;
 
 //  BPlusTreeInternalNode(int size) {
 //    keys = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
@@ -68,8 +67,8 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
 
   @Override
   V get(K key) {
-    System.out.println("this" + pageId);
-    System.out.println("child" + childrenPageId);
+//    System.out.println("this" + pageId);
+//    System.out.println("child" + childrenPageId);
     return searchChild(key).get(key);
   }
 
@@ -79,8 +78,10 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
     child.put(key, value);
     if (child.isOverFlow()) {
       BPlusTreeNode<K, V> newSiblingNode = child.split();
+
       insertChild(newSiblingNode.getFirstLeafKey(), newSiblingNode);
       this.writeThisToDist();
+      child.writeThisToDist();
     }
   }
 
@@ -144,7 +145,7 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
     int from = size() / 2 + 1;
     int to = size();
     BPlusTreeInternalNode<K, V> newSiblingNode = new BPlusTreeInternalNode<>(to - from, pageManager.newPage(), pageManager);
-    System.out.println("NEW INTERNAL");
+//    System.out.println("NEW INTERNAL");
     for (int i = 0; i < to - from; i++) {
       newSiblingNode.keys.set(i, keys.get(i + from));
 //      newSiblingNode.children.set(i, children.get(i + from));
@@ -177,9 +178,6 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
 
   private BPlusTreeNode<K, V> searchChild(K key) {
     int index = binarySearch(key);
-//    System.out.println("CHILD" + childrenPageId);
-//    System.out.println("INDEX" + (index >= 0 ? index + 1 : -index - 1));
-//    return children.get(index >= 0 ? index + 1 : -index - 1);
     return getChildNode(index >= 0 ? index + 1 : -index - 1);
   }
 
