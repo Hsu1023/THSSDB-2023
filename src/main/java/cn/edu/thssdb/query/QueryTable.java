@@ -31,6 +31,41 @@ public class QueryTable implements Iterator<Row> {
     this.rows = QueryTable.getRowsSatisfyWhereClause(rowIterator, columns, null);
   }
 
+  public QueryTable(
+      QueryTable left_table, QueryTable right_table, SQLParser.ConditionContext joinCondition) {
+    (this.columns = new ArrayList<>(left_table.columns)).addAll(right_table.columns);
+    this.rows = new ArrayList<>();
+
+    String leftColumnName = null, rightColumnName = null;
+    int leftColumnIndex = -1, rightColumnIndex = -1;
+    //    if (joinCondition == null) {
+    //      // throw wrong join condition exception
+    //      System.out.println("join condition is null");
+    //    }
+    // 获取join条件下左右两列在各自表中的名字和index
+    leftColumnName = joinCondition.expression(0).getText().toLowerCase();
+    rightColumnName = joinCondition.expression(1).getText().toLowerCase();
+    leftColumnIndex = QueryTable.getIndexOfAttrName(left_table.columns, leftColumnName);
+    rightColumnIndex = QueryTable.getIndexOfAttrName(right_table.columns, rightColumnName);
+
+    if (leftColumnIndex == -1 || rightColumnIndex == -1) {
+      throw new AttributeNotExistException();
+    }
+
+    for (Row left_row : left_table.rows) {
+      for (Row right_row : right_table.rows) {
+        Entry leftRefValue = left_row.getEntries().get(leftColumnIndex);
+        Entry rightRefValue = right_row.getEntries().get(rightColumnIndex);
+        if (leftRefValue.equals(rightRefValue) == false) {
+          continue;
+        }
+        Row new_row = new Row(left_row.getEntries());
+        new_row.getEntries().addAll(right_row.getEntries());
+        this.rows.add(new_row);
+      }
+    }
+  }
+
   @Override
   public boolean hasNext() {
     // TODO

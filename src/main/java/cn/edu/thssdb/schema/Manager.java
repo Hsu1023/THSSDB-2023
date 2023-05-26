@@ -453,20 +453,42 @@ public class Manager {
     }
   }
 
+  QueryTable getFinalQueryTable(SQLParser.TableQueryContext query) {
+    QueryTable left_table = null, right_table = null;
+    Database database = Manager.getInstance().curDatabase;
+    System.out.println(database.get(query.tableName(0).getText()));
+    System.out.println(database.get(query.tableName(1).getText()));
+    left_table = new QueryTable(database.get(query.tableName(0).getText()));
+    right_table = new QueryTable(database.get(query.tableName(1).getText()));
+    SQLParser.ConditionContext joinCondition = null;
+    if (query.K_ON() != null) {
+      joinCondition = query.multipleCondition().condition();
+    }
+    QueryTable cross_table = new QueryTable(left_table, right_table, joinCondition);
+    return cross_table;
+  }
+
   public QueryResult select(SQLParser.SelectStmtContext ctx) {
     try {
       // TODO: lock, from multiple tables
-
+      QueryTable finalTable = null;
       // from TABLE
-      QueryTable queryTable = QueryTable.fromQueryCtx(ctx.tableQuery(0));
+      SQLParser.TableQueryContext query = ctx.tableQuery().get(0); // 只有1个query
+      if (query.getChildCount() == 1) {
+        finalTable = QueryTable.fromQueryCtx(ctx.tableQuery(0));
+      }
+      // join
+      else {
+        finalTable = getFinalQueryTable(query);
+      }
 
       // where CONDITION
       if (ctx.K_WHERE() != null) {
         SQLParser.ConditionContext selectCondition = ctx.multipleCondition().condition();
         ArrayList<Row> newRows =
             QueryTable.getRowsSatisfyWhereClause(
-                queryTable.iterator(), queryTable.columns, selectCondition);
-        queryTable.rows = newRows;
+                finalTable.iterator(), finalTable.columns, selectCondition);
+        finalTable.rows = newRows;
       }
 
       // select ATTR
@@ -480,12 +502,12 @@ public class Manager {
         }
         String columnName = columnContext.columnFullName().getText().toLowerCase();
         finalColumnNames.add(columnName);
-        int index = QueryTable.getIndexOfAttrName(queryTable.columns, columnName);
+        int index = QueryTable.getIndexOfAttrName(finalTable.columns, columnName);
         columnIndexs.add(index);
       }
-      if (!isSelectAll) queryTable.filteredOnColumns(columnIndexs);
+      if (!isSelectAll) finalTable.filteredOnColumns(columnIndexs);
 
-      return queryTable.toQueryResult();
+      return finalTable.toQueryResult();
 
     } catch (Exception e) {
       e.printStackTrace();
