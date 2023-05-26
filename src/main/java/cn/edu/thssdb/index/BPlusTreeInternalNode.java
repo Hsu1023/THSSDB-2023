@@ -125,7 +125,6 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
 //    else if (index >= 0) keys.set(index, children.get(index + 1).getFirstLeafKey());
     else if (index >= 0) {
       keys.set(index, (K)(getChildNode(index + 1).getFirstLeafKey()));
-
     }
     this.writeThisToDist();
   }
@@ -145,6 +144,7 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
     int from = size() / 2 + 1;
     int to = size();
     BPlusTreeInternalNode<K, V> newSiblingNode = new BPlusTreeInternalNode<>(to - from, pageManager.newPage(), pageManager);
+    System.out.println("NEW INTERNAL");
     for (int i = 0; i < to - from; i++) {
       newSiblingNode.keys.set(i, keys.get(i + from));
 //      newSiblingNode.children.set(i, children.get(i + from));

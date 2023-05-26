@@ -43,11 +43,10 @@ public class BPlusTreeTest {
     values = new ArrayList<>();
     map = new HashMap<>();
     HashSet<Integer> set = new HashSet<>();
-    int size = 10;
+    int size = 1000;
     Column [] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
-//    for (int i = 0; i < size; i++) columns[i] = new Column("", ColumnType.INT, 0, true, 2);
     File file = new File("./data.bin");
     if (!file.exists()) try{file.createNewFile();}catch (Exception e){e.printStackTrace();}
     tree = new BPlusTree<>("./data.bin", columns, 0);
@@ -56,6 +55,7 @@ public class BPlusTreeTest {
       double random = Math.random();
       set.add((int) (random * size));
     }
+//    set.add(5);set.add(3);set.add(4);set.add(8);set.add(6);set.add(7);set.add(9);
     System.out.println("TOTAL" + set.size());
     for (Integer key : set) {
       int hashCode = key.hashCode();
@@ -79,31 +79,31 @@ public class BPlusTreeTest {
     }
   }
 
-//  @Test
-//  public void testRemove() {
-//    int size = keys.size();
-//    for (int i = 0; i < size; i += 2) {
-//      // remove half data
-//      tree.remove(keys.get(i));
-//    }
-//    // check if size equals half of origin
-//    assertEquals(size / 2, tree.size());
-//    for (int i = 1; i < size; i += 2) {
-////      assertEquals(, tree.get(keys.get(i)));
-//      int x = map.get(entry2Int(keys.get(i)));
-//      int y = row2Int (tree.get(keys.get(i)));
-//      assertEquals(x, y);
-//    }
-//  }
-//
-//  @Test
-//  public void testIterator() {
-//    BPlusTreeIterator<Entry, Row> iterator = tree.iterator();
-//    int c = 0;
-//    while (iterator.hasNext()) {
-//      assertTrue(values.contains(iterator.next().right));
-//      c++;
-//    }
-//    assertEquals(values.size(), c);
-//  }
+  @Test
+  public void testRemove() {
+    int size = keys.size();
+    for (int i = 0; i < size; i += 2) {
+      // remove half data
+      tree.remove(keys.get(i));
+    }
+    // check if size equals half of origin
+    assertEquals(size / 2, tree.size());
+    for (int i = 1; i < size; i += 2) {
+//      assertEquals(, tree.get(keys.get(i)));
+      int x = map.get(entry2Int(keys.get(i)));
+      int y = row2Int (tree.get(keys.get(i)));
+      assertEquals(x, y);
+    }
+  }
+
+  @Test
+  public void testIterator() {
+    BPlusTreeIterator<Entry, Row> iterator = tree.iterator();
+    int c = 0;
+    while (iterator.hasNext()) {
+      assertTrue(values.contains(iterator.next().right));
+      c++;
+    }
+    assertEquals(values.size(), c);
+  }
 }

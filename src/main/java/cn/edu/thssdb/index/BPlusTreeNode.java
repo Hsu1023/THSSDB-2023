@@ -46,14 +46,17 @@ abstract class BPlusTreeNode<K extends Comparable<K>, V> {
   void keysAdd(int index, K key) {
     for (int i = nodeSize; i > index; i--) {
       keys.set(i, keys.get(i - 1));
+      System.out.println("----------"+keys.get(i-1));
     }
     keys.set(index, key);
+    System.out.println("----------"+key);
     nodeSize++;
   }
 
   void keysRemove(int index) {
     for (int i = index; i < nodeSize - 1; i++) {
       keys.set(i, keys.get(i + 1));
+      System.out.println("----------"+keys.get(i+1));
     }
     nodeSize--;
   }

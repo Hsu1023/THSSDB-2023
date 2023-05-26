@@ -40,6 +40,11 @@ public class PageManager {
     public int newPage() {
         if (vacantPage.isEmpty()) {
             ++curUsedPageNum;
+            if(curUsedPageNum == 3){
+                curUsedPageNum++;
+                curUsedPageNum--;
+            }
+            System.out.println("USEDPAGENUM" + curUsedPageNum);
             try {
                 if (curUsedPageNum >= totalPageNum)
                     flush();
@@ -118,8 +123,9 @@ public class PageManager {
             ArrayList<Entry> k = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
             ArrayList<Integer> children = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
             for (int i = 0; i < size; i++){
-                k.set(i, readKey(raf, columns[primaryIndex]));
                 children.set(i, raf.readInt());
+                k.set(i, readKey(raf, columns[primaryIndex]));
+//                System.out.println("WWWWWWWWWWWWWW" + k.get(i));
             }
             children.set(size, raf.readInt());
             return new BPlusTreeInternalNode(size, k, children, pageId, this);
@@ -164,11 +170,11 @@ public class PageManager {
             raf.writeInt(size); // size
 
             raf.writeInt(node.nextPageId); // next
-            System.out.println("BTree size" + size);
+//            System.out.println("BTree size" + size);
             assert 2 + 2 + 2 + size * (KSize + VSize) <= Global.PAGE_SIZE;
             for (int i = 0; i < size; i++) {
                 Entry e = (Entry) node.keys.get(i);
-                System.out.println("BTree entry" + e);
+//                System.out.println("BTree entry" + e);
                 Row r = (Row) node.values.get(i);
                 Column keyColumn = columns[primaryIndex];
                 writeKey(raf, keyColumn, e);
