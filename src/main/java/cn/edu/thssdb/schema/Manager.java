@@ -113,17 +113,17 @@ public class Manager {
   }
 
   public void quit() {
-    try {
-      for (String i : databases.keySet()) {
-        Database database = databases.get(i);
-        for (String j : database.tables.keySet()) {
-          Table table = database.tables.get(j);
-          table.persist();
-        }
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
+    //    try {
+    //      for (String i : databases.keySet()) {
+    //        Database database = databases.get(i);
+    //        for (String j : database.tables.keySet()) {
+    //          Table table = database.tables.get(j);
+    //          table.persist();
+    //        }
+    //      }
+    //    } catch (Exception e) {
+    //      e.printStackTrace();
+    //    }
   }
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {

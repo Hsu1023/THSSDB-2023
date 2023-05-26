@@ -10,20 +10,24 @@ import java.util.Collections;
 public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode<K, V> {
 
   ArrayList<V> values;
-//  private BPlusTreeLeafNode<K, V> next;
+  //  private BPlusTreeLeafNode<K, V> next;
 
   public int nextPageId;
 
+  //  BPlusTreeLeafNode(int size) {
+  //    keys = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
+  //    values = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
+  //    nodeSize = size;
+  ////    this.pageId = pageId;
+  //  }
 
-
-//  BPlusTreeLeafNode(int size) {
-//    keys = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
-//    values = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
-//    nodeSize = size;
-////    this.pageId = pageId;
-//  }
-
-  public BPlusTreeLeafNode(int size, ArrayList<K> k, ArrayList<V> v, int pageId, int nextPageId, PageManager pageManager){
+  public BPlusTreeLeafNode(
+      int size,
+      ArrayList<K> k,
+      ArrayList<V> v,
+      int pageId,
+      int nextPageId,
+      PageManager pageManager) {
     keys = k;
     values = v;
     nodeSize = size;
@@ -32,7 +36,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     this.pageManager = pageManager;
   }
 
-  public BPlusTreeLeafNode(int size, int pageId, int nextPageId, PageManager pageManager){
+  public BPlusTreeLeafNode(int size, int pageId, int nextPageId, PageManager pageManager) {
     keys = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     values = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     nodeSize = size;
@@ -41,7 +45,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     this.pageManager = pageManager;
   }
 
-  public void writeThisToDist(){
+  public void writeThisToDist() {
     pageManager.writeLeafNode(pageId, this);
   }
 
@@ -98,9 +102,9 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     int from = (size() + 1) / 2;
     int to = size();
     BPlusTreeLeafNode<K, V> newSiblingNode =
-      new BPlusTreeLeafNode<>(to - from, pageManager.newPage(), -1,  pageManager);
+        new BPlusTreeLeafNode<>(to - from, pageManager.newPage(), -1, pageManager);
 
-//    System.out.println("NEW LEAF");
+    //    System.out.println("NEW LEAF");
     for (int i = 0; i < to - from; i++) {
       newSiblingNode.keys.set(i, keys.get(i + from));
       newSiblingNode.values.set(i, values.get(i + from));

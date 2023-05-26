@@ -23,7 +23,6 @@ abstract class BPlusTreeNode<K extends Comparable<K>, V> {
 
   abstract BPlusTreeNode<K, V> split();
 
-
   public abstract void writeThisToDist();
 
   abstract void merge(BPlusTreeNode<K, V> sibling);
@@ -55,7 +54,7 @@ abstract class BPlusTreeNode<K extends Comparable<K>, V> {
   void keysRemove(int index) {
     for (int i = index; i < nodeSize - 1; i++) {
       keys.set(i, keys.get(i + 1));
-//      System.out.println("----------"+keys.get(i+1));
+      //      System.out.println("----------"+keys.get(i+1));
     }
     nodeSize--;
   }

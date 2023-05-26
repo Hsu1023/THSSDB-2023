@@ -51,9 +51,8 @@ public class Table implements Iterable<Row> {
 
     this.index = new BPlusTree<>(this.getBinPath(), columns, primaryIndex);
 
-
     // TODO initiate lock status.
-    recover();
+    //    recover();
   }
 
   public int getColumnIndexByName(String name) {
@@ -66,17 +65,17 @@ public class Table implements Iterable<Row> {
   }
 
   private void recover() {
-    try {
-      // TODO lock control
-      ArrayList<Row> rowsOnDisk = deserialize();
-      for (Row row : rowsOnDisk) this.index.put(row.getEntries().get(this.primaryIndex), row);
-    } finally {
-      // TODO lock control
-    }
+    //    try {
+    //      // TODO lock control
+    //      ArrayList<Row> rowsOnDisk = deserialize();
+    //      for (Row row : rowsOnDisk) this.index.put(row.getEntries().get(this.primaryIndex), row);
+    //    } finally {
+    //      // TODO lock control
+    //    }
   }
 
   public void persist() {
-    serialize();
+    //    serialize();
   }
 
   public void insert(Row row) {
@@ -86,7 +85,6 @@ public class Table implements Iterable<Row> {
       this.checkRowValidInTable(row);
       if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
-
 
     } finally {
       // TODO lock control
@@ -160,46 +158,46 @@ public class Table implements Iterable<Row> {
     return this.index.contains(row.getEntries().get(this.primaryIndex));
   }
 
-  private void serialize() {
-    try {
-      File tableFolder = new File(this.getFolderPath());
-      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
-        throw new RuntimeException();
-      File tableFile = new File(this.getDataPath());
-      if (!tableFile.exists() ? !tableFile.createNewFile() : !tableFile.isFile())
-        throw new RuntimeException();
-      FileOutputStream fileOutputStream = new FileOutputStream(this.getDataPath());
-      ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-      for (Row row : this) objectOutputStream.writeObject(row);
-      objectOutputStream.close();
-      fileOutputStream.close();
-    } catch (Exception e) {
-      throw new RuntimeException();
-    }
-  }
+  //  private void serialize() {
+  //    try {
+  //      File tableFolder = new File(this.getFolderPath());
+  //      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
+  //        throw new RuntimeException();
+  //      File tableFile = new File(this.getDataPath());
+  //      if (!tableFile.exists() ? !tableFile.createNewFile() : !tableFile.isFile())
+  //        throw new RuntimeException();
+  //      FileOutputStream fileOutputStream = new FileOutputStream(this.getDataPath());
+  //      ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
+  //      for (Row row : this) objectOutputStream.writeObject(row);
+  //      objectOutputStream.close();
+  //      fileOutputStream.close();
+  //    } catch (Exception e) {
+  //      throw new RuntimeException();
+  //    }
+  //  }
 
-  private ArrayList<Row> deserialize() {
-    try {
-      File tableFolder = new File(this.getFolderPath());
-      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
-        throw new RuntimeException();
-      File tableFile = new File(this.getDataPath());
-      if (!tableFile.exists()) return new ArrayList<>();
-      FileInputStream fileInputStream = new FileInputStream(this.getDataPath());
-      ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-      ArrayList<Row> rowsOnDisk = new ArrayList<>();
-      Object tmpObj;
-      while (fileInputStream.available() > 0) {
-        tmpObj = objectInputStream.readObject();
-        rowsOnDisk.add((Row) tmpObj);
-      }
-      objectInputStream.close();
-      fileInputStream.close();
-      return rowsOnDisk;
-    } catch (Exception e) {
-      throw new RuntimeException();
-    }
-  }
+  //  private ArrayList<Row> deserialize() {
+  //    try {
+  //      File tableFolder = new File(this.getFolderPath());
+  //      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
+  //        throw new RuntimeException();
+  //      File tableFile = new File(this.getDataPath());
+  //      if (!tableFile.exists()) return new ArrayList<>();
+  //      FileInputStream fileInputStream = new FileInputStream(this.getDataPath());
+  //      ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
+  //      ArrayList<Row> rowsOnDisk = new ArrayList<>();
+  //      Object tmpObj;
+  //      while (fileInputStream.available() > 0) {
+  //        tmpObj = objectInputStream.readObject();
+  //        rowsOnDisk.add((Row) tmpObj);
+  //      }
+  //      objectInputStream.close();
+  //      fileInputStream.close();
+  //      return rowsOnDisk;
+  //    } catch (Exception e) {
+  //      throw new RuntimeException();
+  //    }
+  //  }
 
   public String getFolderPath() {
     return this.tableFolderPath;
@@ -213,7 +211,9 @@ public class Table implements Iterable<Row> {
     return this.tableFolderPath + "_data";
   }
 
-  public String getBinPath() {return this.tableFolderPath + tableName + ".bin";}
+  public String getBinPath() {
+    return this.tableFolderPath + tableName + ".bin";
+  }
 
   private class TableIterator implements Iterator<Row> {
     private Iterator<Pair<Entry, Row>> iterator;
