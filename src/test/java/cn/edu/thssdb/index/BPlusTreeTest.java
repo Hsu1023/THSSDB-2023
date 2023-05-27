@@ -4,11 +4,9 @@ import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.type.ColumnType;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -22,7 +20,7 @@ public class BPlusTreeTest {
   private ArrayList<Row> values;
   private HashMap<Integer, Integer> map;
 
-  File file;
+  private int cnt = 0;
 
   Entry int2Entry(int i) {
     return new Entry(i);
@@ -52,9 +50,8 @@ public class BPlusTreeTest {
     Column[] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
-    file = new File("./data.bin");
-    if (file.exists()) file.delete();
-    tree = new BPlusTree<>("./data.bin", columns, 0);
+    String filename = "./data" + ".bin";
+    tree = new BPlusTree<>(filename, columns, 0, false);
 
     for (int i = 0; i < size; i++) {
       double random = Math.random();
@@ -111,12 +108,5 @@ public class BPlusTreeTest {
     }
     //    System.out.println(_v);
     assertEquals(values.size(), c);
-  }
-
-  @After
-  public void clearTempFile() {
-    //    File file = new File("./data.bin");
-    //    if(!file.delete()) assert false;
-    if (!file.delete()) assert false;
   }
 }

@@ -21,6 +21,14 @@ public final class BPlusTree<K extends Comparable<K>, V> implements Iterable<Pai
     this.path = path;
   }
 
+  public BPlusTree(String path, Column[] columns, int primaryIndex, Boolean recoverOrNot) {
+    this.pageManager = new PageManager(path, columns, primaryIndex, recoverOrNot);
+    this.root = pageManager.getRootNode();
+    this.size = initTreeSize();
+    System.out.println("INIT_SIZE OF " + path + " " + this.size);
+    this.path = path;
+  }
+
   int initTreeSize() {
     BPlusTreeNode cursor = pageManager.readNode(root.pageId);
     if (cursor == null) return 0;
@@ -50,8 +58,8 @@ public final class BPlusTree<K extends Comparable<K>, V> implements Iterable<Pai
     root.put(key, value);
     size++;
     checkRoot();
-    System.out.println("AFTER PUT SIZE = " + initTreeSize());
-    System.out.println("AFTER PUT ROOT = " + root.pageId);
+    //    System.out.println("AFTER PUT SIZE = " + initTreeSize());
+    //    System.out.println("AFTER PUT ROOT = " + root.pageId);
   }
 
   public void remove(K key) {

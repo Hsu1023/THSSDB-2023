@@ -4,6 +4,8 @@ import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.type.ColumnType;
+import cn.edu.thssdb.utils.ByteBufferReader;
+import cn.edu.thssdb.utils.ByteBufferWriter;
 import cn.edu.thssdb.utils.Global;
 
 import java.io.File;
@@ -34,7 +36,18 @@ public class PageManager {
     this.totalPageNum = -1;
     this.vacantPage = new ArrayList<>();
     getKVSize();
-    initFile();
+    initFile(true);
+  }
+
+  public PageManager(String path, Column[] columns, int primaryIndex, Boolean recoverOrNot) {
+    this.path = path;
+    this.columns = columns;
+    this.primaryIndex = primaryIndex;
+    this.curUsedPageNum = 0;
+    this.totalPageNum = -1;
+    this.vacantPage = new ArrayList<>();
+    getKVSize();
+    initFile(recoverOrNot);
   }
 
   public int newPage() {
@@ -59,10 +72,10 @@ public class PageManager {
     vacantPage.add(vacant);
   }
 
-  void initFile() {
+  void initFile(Boolean recoverOrNot) {
     try {
       File file = new File(path);
-      if (file.exists()) {
+      if (recoverOrNot && file.exists()) {
         this.readHeader();
         if (rootPageId != -1 && rootPageId <= totalPageNum && rootPageId > 0) return;
         System.err.println("File is destroyed, recreate a new file...");
@@ -81,11 +94,14 @@ public class PageManager {
   }
 
   void readHeader() {
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
+    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
       raf.seek(0);
-      totalPageNum = raf.readInt();
-      rootPageId = raf.readInt();
-      curUsedPageNum = raf.readInt();
+      byte b[] = new byte[Global.PAGE_SIZE];
+      raf.read(b);
+      ByteBufferReader reader = new ByteBufferReader(b);
+      totalPageNum = reader.readInt();
+      rootPageId = reader.readInt();
+      curUsedPageNum = reader.readInt();
     } catch (IOException e) {
       e.printStackTrace();
       rootPageId = -1;
@@ -94,19 +110,24 @@ public class PageManager {
 
   void writeInternalNode(int pageId, BPlusTreeInternalNode node) {
     try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
-      raf.seek(pageId * Global.PAGE_SIZE);
-      raf.writeChar('I');
+
+      ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
+      writer.writeChar('I');
       int size = node.nodeSize;
-      raf.writeInt(size); // size
+      writer.writeInt(size); // size
       assert 2 + 2 + 2 + size * (KSize + 2) + 2 <= Global.PAGE_SIZE;
       for (int i = 0; i < size; i++) {
         int childPageId = node.readChildFromDisk(i);
-        raf.writeInt(childPageId);
+        writer.writeInt(childPageId);
         Entry e = (Entry) node.keys.get(i);
         Column keyColumn = columns[primaryIndex];
-        writeKey(raf, keyColumn, e);
+        writeKey(writer, keyColumn, e);
       }
-      raf.writeInt(node.readChildFromDisk(size));
+      writer.writeInt(node.readChildFromDisk(size));
+
+      raf.seek(pageId * Global.PAGE_SIZE);
+      raf.write(writer.getBuf());
+
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -123,11 +144,14 @@ public class PageManager {
   public BPlusTreeNode readNode(int pageId) {
     BPlusTreeNode res = null;
     if (pageId < 0) return null;
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
+    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
       raf.seek(pageId * Global.PAGE_SIZE);
-      char type = raf.readChar();
-      if (type == 'I') res = readInternalNode(raf, pageId);
-      else if (type == 'L') res = readLeafNode(raf, pageId);
+      byte b[] = new byte[Global.PAGE_SIZE];
+      raf.read(b);
+      ByteBufferReader reader = new ByteBufferReader(b);
+      char type = reader.readChar();
+      if (type == 'I') res = readInternalNode(reader, pageId);
+      else if (type == 'L') res = readLeafNode(reader, pageId);
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
@@ -135,17 +159,17 @@ public class PageManager {
     }
   }
 
-  BPlusTreeInternalNode readInternalNode(RandomAccessFile raf, int pageId) throws IOException {
-    int size = raf.readInt(); // size
+  BPlusTreeInternalNode readInternalNode(ByteBufferReader reader, int pageId) throws IOException {
+    int size = reader.readInt(); // size
     assert 2 + 2 + 2 + size * (KSize + 2) + 2 <= Global.PAGE_SIZE;
     ArrayList<Entry> k = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     ArrayList<Integer> children =
         new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     for (int i = 0; i < size; i++) {
-      children.set(i, raf.readInt());
-      k.set(i, readKey(raf, columns[primaryIndex]));
+      children.set(i, reader.readInt());
+      k.set(i, readKey(reader, columns[primaryIndex]));
     }
-    children.set(size, raf.readInt());
+    children.set(size, reader.readInt());
     return new BPlusTreeInternalNode(size, k, children, pageId, this);
   }
 
@@ -190,86 +214,83 @@ public class PageManager {
   }
 
   void writeLeafNode(int pageId, BPlusTreeLeafNode node) {
-    try {
-      RandomAccessFile raf = new RandomAccessFile(new File(path), "rw");
-      raf.seek(pageId * Global.PAGE_SIZE);
-      raf.writeChar('L');
+    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
+      ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
+      writer.writeChar('L');
       int size = node.nodeSize;
-      raf.writeInt(size); // size
+      writer.writeInt(size); // size
 
-      raf.writeInt(node.nextPageId); // next
-      //            System.out.println("BTree size" + size);
+      writer.writeInt(node.nextPageId); // next
       assert 2 + 2 + 2 + size * (KSize + VSize) <= Global.PAGE_SIZE;
       for (int i = 0; i < size; i++) {
         Entry e = (Entry) node.keys.get(i);
-        //                System.out.println("BTree entry" + e);
         Row r = (Row) node.values.get(i);
         Column keyColumn = columns[primaryIndex];
-        writeKey(raf, keyColumn, e);
-        writeValue(raf, columns, r);
+        writeKey(writer, keyColumn, e);
+        writeValue(writer, columns, r);
       }
+      raf.seek(pageId * Global.PAGE_SIZE);
+      raf.write(writer.getBuf());
     } catch (Exception e) {
       e.printStackTrace();
     }
   }
 
-  BPlusTreeLeafNode readLeafNode(RandomAccessFile raf, int pageId) throws IOException {
-    raf.seek(pageId * Global.PAGE_SIZE);
-    char type = raf.readChar();
-    assert type == 'L';
-    int size = raf.readInt();
-    int next = raf.readInt();
+  BPlusTreeLeafNode readLeafNode(ByteBufferReader reader, int pageId) throws IOException {
+    int size = reader.readInt();
+    int next = reader.readInt();
     assert 2 + 2 + 2 + size * (KSize + VSize) <= Global.PAGE_SIZE;
     ArrayList<Entry> k = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     ArrayList<Row> v = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
     for (int i = 0; i < size; i++) {
-      k.set(i, readKey(raf, columns[primaryIndex]));
-      v.set(i, readValue(raf, columns));
+      k.set(i, readKey(reader, columns[primaryIndex]));
+      v.set(i, readValue(reader, columns));
     }
     return new BPlusTreeLeafNode(size, k, v, pageId, next, this);
   }
 
-  void writeKey(RandomAccessFile raf, Column column, Entry e) throws IOException {
+  void writeKey(ByteBufferWriter writer, Column column, Entry e) throws IOException {
     ColumnType type = column.getColumnType();
-    if (type == ColumnType.INT) raf.writeInt((int) e.value);
-    else if (type == ColumnType.FLOAT) raf.writeFloat((float) e.value);
-    else if (type == ColumnType.LONG) raf.writeLong((long) e.value);
-    else if (type == ColumnType.DOUBLE) raf.writeDouble((double) e.value);
+    if (type == ColumnType.INT) writer.writeInt((int) e.value);
+    else if (type == ColumnType.FLOAT) writer.writeFloat((float) e.value);
+    else if (type == ColumnType.LONG) writer.writeLong((long) e.value);
+    else if (type == ColumnType.DOUBLE) writer.writeDouble((double) e.value);
     else {
       String value = (String) e.value;
-      raf.writeChars(value);
+      writer.writeChars(value);
       for (int i = 0; i < column.getMaxLength() - value.length(); i++)
-        raf.writeChar(0); // padding to the max length
+        writer.writeChar(0); // padding to the max length
     }
   }
 
-  void writeValue(RandomAccessFile raf, Column[] columns, Row r) throws IOException {
+  void writeValue(ByteBufferWriter writer, Column[] columns, Row r) throws IOException {
     for (int i = 0; i < columns.length; i++) {
-      writeKey(raf, columns[primaryIndex], r.getEntries().get(i));
+      writeKey(writer, columns[primaryIndex], r.getEntries().get(i));
     }
   }
 
-  Row readValue(RandomAccessFile raf, Column[] columns) throws IOException {
+  Row readValue(ByteBufferReader reader, Column[] columns) throws IOException {
     ArrayList<Entry> entries = new ArrayList<>();
     for (int i = 0; i < columns.length; i++) {
-      entries.add(readKey(raf, columns[primaryIndex]));
+      entries.add(readKey(reader, columns[primaryIndex]));
     }
     return new Row(entries);
   }
 
-  Entry readKey(RandomAccessFile raf, Column column) throws IOException {
+  Entry readKey(ByteBufferReader reader, Column column) {
     ColumnType type = column.getColumnType();
     Comparable value;
-    if (type == ColumnType.INT) value = raf.readInt();
-    else if (type == ColumnType.FLOAT) value = raf.readFloat();
-    else if (type == ColumnType.LONG) value = raf.readLong();
-    else if (type == ColumnType.DOUBLE) value = raf.readDouble();
+    if (type == ColumnType.INT) value = reader.readInt();
+    else if (type == ColumnType.FLOAT) value = reader.readFloat();
+    else if (type == ColumnType.LONG) value = reader.readLong();
+    else if (type == ColumnType.DOUBLE) value = reader.readDouble();
     else {
       String str = "";
       for (int i = 1; i <= column.getMaxLength(); i++) {
-        char x = raf.readChar();
+        char x = reader.readChar();
         if (x == 0) {
-          raf.seek(raf.getFilePointer() + (column.getMaxLength() - i) * 2);
+          //          raf.seek(raf.getFilePointer() + (column.getMaxLength() - i) * 2);
+          reader.seek(reader.getFilePointer() + (column.getMaxLength() - i) * 2);
           break;
         }
         str += x;
@@ -285,7 +306,7 @@ public class PageManager {
       try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {
         int length = Global.PAGE_SIZE * Global.INIT_PAGE_NUM;
         raf.setLength(length); // 设置文件的长度为4KB
-        //                raf.write(new byte[length]); // 用空字节数组写满整个文件
+        raf.write(new byte[length]); // 用空字节数组写满整个文件
         totalPageNum = Global.INIT_PAGE_NUM;
         writeHeaderPageNum(raf);
       } catch (IOException e) {
