@@ -9,10 +9,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Table implements Iterable<Row> {
-  ReentrantReadWriteLock lock;
+  //  ReentrantReadWriteLock lock;
   private String databaseName;
   public String tableName;
   public ArrayList<Column> columns;
@@ -21,8 +20,12 @@ public class Table implements Iterable<Row> {
   private String databaseFolderPath;
   private String tableFolderPath;
 
+  private int tplock = 0; // 0表示既没加s也没加x; 1表示被加s锁; 2表示被加x锁
+  public ArrayList<Long> s_lock_list = new ArrayList<Long>(); // 存储这个表的s锁被哪些session持有
+  public ArrayList<Long> x_lock_list = new ArrayList<Long>(); // 存储这个表的x锁被哪些session持有
+
   public Table(String databaseName, String tableName, Column[] columns, String databaseFolderPath) {
-    this.lock = new ReentrantReadWriteLock();
+    //    this.lock = new ReentrantReadWriteLock();
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.columns = new ArrayList<>(Arrays.asList(columns));
@@ -81,14 +84,14 @@ public class Table implements Iterable<Row> {
   public void insert(Row row) {
     try {
       // TODO lock control
-      this.lock.writeLock().lock();
+      //      this.lock.writeLock().lock();
       this.checkRowValidInTable(row);
       if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
 
     } finally {
       // TODO lock control
-      this.lock.writeLock().unlock();
+      //      this.lock.writeLock().unlock();
     }
   }
 
@@ -97,14 +100,14 @@ public class Table implements Iterable<Row> {
   }
 
   public void delete(Row row) {
-    lock.writeLock().lock();
+    //    lock.writeLock().lock();
     try {
       //      if (!this.contains(row)) {
       //        throw new RowNotExistException();
       //      }
       index.remove(row.getEntries().get(primaryIndex));
     } finally {
-      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
@@ -113,7 +116,7 @@ public class Table implements Iterable<Row> {
   }
 
   public void update(Row oldRow, Row newRow) {
-    this.lock.writeLock().lock();
+    //    this.lock.writeLock().lock();
     try {
       checkRowValidInTable(newRow);
       Entry oldKeyEntry = oldRow.getEntries().get(primaryIndex);
@@ -126,7 +129,7 @@ public class Table implements Iterable<Row> {
       index.put(newKeyEntry, newRow);
 
     } finally {
-      this.lock.writeLock().unlock();
+      //      this.lock.writeLock().unlock();
     }
   }
 
@@ -198,6 +201,71 @@ public class Table implements Iterable<Row> {
   //      throw new RuntimeException();
   //    }
   //  }
+
+  public void free_s_lock(long session) {
+    if (s_lock_list.contains(session)) {
+      s_lock_list.remove(session);
+      if (s_lock_list.size() == 0) {
+        tplock = 0;
+      } else {
+        tplock = 1;
+      }
+    }
+    System.out.println("tplock+-");
+    System.out.println(tplock);
+  }
+
+  public int get_s_lock(long session) {
+    int value = 0; // 返回-1代表加锁失败  返回0代表成功但未加锁  返回1代表成功加锁
+    if (tplock == 2) {
+      if (x_lock_list.contains(session)) { // 自身已经有更高级的锁了 用x锁去读，未加锁
+        value = 0;
+      } else {
+        value = -1; // 别的session占用x锁，未加锁
+      }
+    } else if (tplock == 1) {
+      if (s_lock_list.contains(session)) { // 自身已经有s锁了 用s锁去读，未加锁
+        value = 0;
+      } else {
+        s_lock_list.add(session); // 其他session加了s锁 把自己加上
+        tplock = 1;
+        value = 1;
+      }
+    } else if (tplock == 0) {
+      s_lock_list.add(session); // 未加锁 把自己加上
+      tplock = 1;
+      value = 1;
+      System.out.println(s_lock_list);
+    }
+    return value;
+  }
+
+  public void free_x_lock(long session) {
+    if (x_lock_list.contains(session)) {
+      tplock = 0;
+      x_lock_list.remove(session);
+    }
+  }
+
+  public int get_x_lock(long session) {
+    int value = 0; // 返回-1代表加锁失败  返回0代表成功但未加锁  返回1代表成功加锁
+    System.out.println("tplock");
+    System.out.println(tplock);
+    if (tplock == 2) {
+      if (x_lock_list.contains(session)) { // 自身已经取得x锁
+        value = 0;
+      } else {
+        value = -1; // 获取x锁失败
+      }
+    } else if (tplock == 1) {
+      value = -1; // 正在被其他s锁占用
+    } else if (tplock == 0) {
+      x_lock_list.add(session);
+      tplock = 2;
+      value = 1;
+    }
+    return value;
+  }
 
   public String getFolderPath() {
     return this.tableFolderPath;

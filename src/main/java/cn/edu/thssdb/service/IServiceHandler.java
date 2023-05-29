@@ -118,18 +118,18 @@ public class IServiceHandler implements IService.Iface {
       case INSERT:
         System.out.println("[DEBUG] " + plan);
         InsertPlan insertPlan = (InsertPlan) plan;
-        manager.insert(insertPlan.getCtx());
+        manager.insert(insertPlan.getCtx(), req.getSessionId());
         return new ExecuteStatementResp(StatusUtil.success(), false);
 
       case DELETE:
         System.out.println("[DEBUG] " + plan);
         DeletePlan deletePlan = (DeletePlan) plan;
-        manager.delete(deletePlan.getCtx());
+        manager.delete(deletePlan.getCtx(), req.getSessionId());
         return new ExecuteStatementResp(StatusUtil.success(), false);
       case SELECT:
         System.out.println("[DEBUG] " + plan);
         SelectPlan selectPlan = (SelectPlan) plan;
-        QueryResult queryResult = manager.select(selectPlan.getCtx());
+        QueryResult queryResult = manager.select(selectPlan.getCtx(), req.getSessionId());
         ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
         for (Row row : queryResult.results) resp.addToRowList(row.toStringList());
         if (queryResult.results.size() == 0) {
@@ -143,9 +143,20 @@ public class IServiceHandler implements IService.Iface {
       case UPDATE:
         System.out.println("[DEBUG] " + plan);
         UpdatePlan updatePlan = (UpdatePlan) plan;
-        manager.update(updatePlan.getCtx());
+        manager.update(updatePlan.getCtx(), req.getSessionId());
         return new ExecuteStatementResp(StatusUtil.success(), false);
 
+      case BEGIN_TRANS:
+        System.out.println("[DEBUG] " + plan);
+        BeginTransactionPlan beginTransactionPlan = (BeginTransactionPlan) plan;
+        manager.beginTransaction(beginTransactionPlan.getCtx(), req.getSessionId());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
+
+      case COMMIT:
+        System.out.println("[DEBUG] " + plan);
+        CommitPlan commitPlan = (CommitPlan) plan;
+        manager.commit(commitPlan.getCtx(), req.getSessionId());
+        return new ExecuteStatementResp(StatusUtil.success(), false);
       default:
     }
     return null;

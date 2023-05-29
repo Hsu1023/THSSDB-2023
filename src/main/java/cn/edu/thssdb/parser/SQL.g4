@@ -28,7 +28,9 @@ sqlStmt :
     | showDbStmt
     | showTableStmt
     | quitStmt
-    | updateStmt ;
+    | updateStmt
+    | beginTransactionStmt
+    | commitStmt;
 
 createDbStmt :
     K_CREATE K_DATABASE databaseName ;
@@ -90,6 +92,12 @@ dropViewStmt :
 updateStmt :
     K_UPDATE tableName
         K_SET columnName '=' expression ( K_WHERE multipleCondition )? ;
+
+beginTransactionStmt :
+    K_BEGIN K_TRANSACTION;
+
+commitStmt:
+    K_COMMIT;
 
 columnDef :
     columnName typeName columnConstraint* ;
@@ -225,6 +233,9 @@ K_USER : U S E R;
 K_VALUES : V A L U E S;
 K_VIEW : V I E W;
 K_WHERE : W H E R E;
+K_BEGIN : B E G I N;
+K_TRANSACTION: T R A N S A C T I O N;
+K_COMMIT: C O M M I T;
 
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;

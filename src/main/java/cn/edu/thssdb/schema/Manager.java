@@ -9,7 +9,6 @@ import cn.edu.thssdb.utils.Global;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Manager {
   private HashMap<String, Database> databases;
@@ -17,7 +16,17 @@ public class Manager {
   private Database curDatabase = null;
 
   private static String MANAGER_DATAPATH = Global.DATA_PATH + File.separator + "manager.db";
-  private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+  //  private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+  private String seperateLevel =
+      "READ_COMMITTED"; // could be changed into "READ_COMMITTED" or "SERIALIZABLE"
+
+  public ArrayList<Long> transaction_list =
+      new ArrayList<Long>(); // 事务列表，begin transaction开启，commit结束
+  public ArrayList<Long> session_queue = new ArrayList<Long>(); // 由于锁阻塞的session队列
+  public HashMap<Long, ArrayList<String>> s_lock_dict =
+      new HashMap<Long, ArrayList<String>>(); // 记录每个session取得了哪些表的s锁
+  public HashMap<Long, ArrayList<String>> x_lock_dict =
+      new HashMap<Long, ArrayList<String>>(); // 记录每个session取得了哪些表的x锁
 
   public static Manager getInstance() {
     return Manager.ManagerHolder.INSTANCE;
@@ -44,7 +53,7 @@ public class Manager {
   public void createDatabaseIfNotExists(String name) {
     // TODO
     Boolean change = false;
-    lock.writeLock().lock();
+    //    lock.writeLock().lock();
     try {
       if (!databases.containsKey(name)) {
         Database newDatabase = new Database(name);
@@ -57,14 +66,14 @@ public class Manager {
       }
     } finally {
       if (change) persistDatabases();
-      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   public void deleteDatabase(String name) {
 
     Boolean change = false;
-    lock.writeLock().lock();
+    //    lock.writeLock().lock();
     try {
       if (databases.containsKey(name)) {
         Database db = databases.get(name);
@@ -77,7 +86,7 @@ public class Manager {
       }
     } finally {
       if (change) persistDatabases();
-      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
@@ -87,14 +96,14 @@ public class Manager {
 
   public void switchDatabase(String name) {
     try {
-      lock.readLock().lock();
+      //      lock.readLock().lock();
       if (!databases.containsKey(name)) {
         System.out.println("[DEBUG] " + "non-existed db " + name);
         throw new DatabaseNotExistException();
       }
       curDatabase = databases.get(name);
     } finally {
-      lock.readLock().unlock();
+      //      lock.readLock().unlock();
     }
   }
 
@@ -257,7 +266,7 @@ public class Manager {
     return curDatabase;
   }
 
-  public void insert(SQLParser.InsertStmtContext ctx) {
+  public void insert(SQLParser.InsertStmtContext ctx, long session) {
     try {
       // get table
       Database database = getAndAssumeCurrentDatabase();
@@ -267,6 +276,49 @@ public class Manager {
       }
       Table table = database.get(tableName);
 
+      if (seperateLevel == "SERIALIZABLE") {
+        // lock
+        while (true) {
+          if (!session_queue.contains(session)) { // 不在原来的阻塞队列里
+            int get_lock = table.get_x_lock(session);
+            if (get_lock != -1) {
+              if (get_lock == 1) {
+                ArrayList<String> tmp = x_lock_dict.get(session);
+                if (tmp == null) {
+                  ArrayList<String> tmp1 = new ArrayList<String>();
+                  tmp1.add(tableName);
+                  x_lock_dict.put(session, tmp1);
+                } else {
+                  tmp.add(tableName);
+                  x_lock_dict.put(session, tmp);
+                }
+              }
+              break;
+            } else {
+              session_queue.add(session);
+            }
+          } else { // 之前等待的session
+            if (session_queue.get(0) == session) { // 在原来的阻塞队列里
+              int get_lock = table.get_x_lock(session);
+              if (get_lock != -1) {
+                if (get_lock == 1) {
+                  ArrayList<String> tmp = x_lock_dict.get(session);
+                  if (tmp == null) {
+                    ArrayList<String> tmp1 = new ArrayList<String>();
+                    tmp1.add(tableName);
+                    x_lock_dict.put(session, tmp1);
+                  } else {
+                    tmp.add(tableName);
+                    x_lock_dict.put(session, tmp);
+                  }
+                }
+                session_queue.remove(0);
+                break;
+              }
+            }
+          }
+        }
+      }
       // get value list
       List<SQLParser.ValueEntryContext> values = ctx.valueEntry();
       ArrayList<String> valueStringList = new ArrayList<>();
@@ -315,14 +367,28 @@ public class Manager {
       Row newRow = new Row(entries);
       table.insert(newRow);
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
-      // throw exception
+      if (seperateLevel == "SERIALIZABLE") {
+        // 判断是否默认commit
+        if (!transaction_list.contains(
+            session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+          // 释放锁
+          Database the_database = curDatabase;
+          ArrayList<String> table_list = x_lock_dict.get(session);
+          for (String table_name : table_list) {
+            Table the_table = the_database.get(table_name);
+            the_table.free_x_lock(session);
+          }
+          table_list.clear();
+          x_lock_dict.put(session, table_list);
+        }
+      }
+
+    } finally {
+
     }
   }
 
-  public void delete(SQLParser.DeleteStmtContext ctx) {
+  public void delete(SQLParser.DeleteStmtContext ctx, long session) {
     try {
       // get table
       Database database = getAndAssumeCurrentDatabase();
@@ -331,6 +397,51 @@ public class Manager {
         throw new TableNotExistException();
       }
       Table table = database.get(tableName);
+
+      if (seperateLevel == "SERIALIZABLE") {
+        // lock
+        while (true) {
+          if (!session_queue.contains(session)) { // 不在原来的阻塞队列里
+            int get_lock = table.get_x_lock(session);
+            if (get_lock != -1) {
+              if (get_lock == 1) {
+                ArrayList<String> tmp = x_lock_dict.get(session);
+                if (tmp == null) {
+                  ArrayList<String> tmp1 = new ArrayList<String>();
+                  tmp1.add(tableName);
+                  x_lock_dict.put(session, tmp1);
+                } else {
+                  tmp.add(tableName);
+                  x_lock_dict.put(session, tmp);
+                }
+              }
+              break;
+            } else {
+              session_queue.add(session);
+            }
+          } else { // 之前等待的session
+            if (session_queue.get(0) == session) { // 在原来的阻塞队列里
+              int get_lock = table.get_x_lock(session);
+              if (get_lock != -1) {
+                if (get_lock == 1) {
+                  ArrayList<String> tmp = x_lock_dict.get(session);
+                  if (tmp == null) {
+                    ArrayList<String> tmp1 = new ArrayList<String>();
+                    tmp1.add(tableName);
+                    x_lock_dict.put(session, tmp1);
+                  } else {
+                    tmp.add(tableName);
+                    x_lock_dict.put(session, tmp);
+                  }
+                }
+                session_queue.remove(0);
+                break;
+              }
+            }
+          }
+        }
+      }
+
       ArrayList<Column> columns = table.columns;
 
       Iterator<Row> rowIterator = table.iterator();
@@ -375,13 +486,29 @@ public class Manager {
       }
 
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
+
+      if (seperateLevel == "SERIALIZABLE") {
+        // 判断是否默认commit
+        if (!transaction_list.contains(
+            session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+          // 释放锁
+          Database the_database = curDatabase;
+          ArrayList<String> table_list = x_lock_dict.get(session);
+          for (String table_name : table_list) {
+            Table the_table = the_database.get(table_name);
+            the_table.free_x_lock(session);
+          }
+          table_list.clear();
+          x_lock_dict.put(session, table_list);
+        }
+      }
+
+    } finally {
+
     }
   }
 
-  public void update(SQLParser.UpdateStmtContext ctx) {
+  public void update(SQLParser.UpdateStmtContext ctx, long session) {
     try {
       // get table
       Database database = getAndAssumeCurrentDatabase();
@@ -399,7 +526,50 @@ public class Manager {
       Column selectedColumn = columns.get(updateIndex);
       Entry attrValue =
           selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
+      // lock
+      while (true) {
+        if (!session_queue.contains(session)) { // 不在原来的阻塞队列里
+          int get_lock = table.get_x_lock(session);
+          if (get_lock != -1) {
+            if (get_lock == 1) {
+              ArrayList<String> tmp = x_lock_dict.get(session);
+              if (tmp == null) {
+                ArrayList<String> tmp1 = new ArrayList<String>();
+                tmp1.add(tableName);
+                x_lock_dict.put(session, tmp1);
+              } else {
+                tmp.add(tableName);
+                x_lock_dict.put(session, tmp);
+              }
+            }
+            break;
+          } else {
+            session_queue.add(session);
+          }
+        } else { // 之前等待的session
+          if (session_queue.get(0) == session) { // 在原来的阻塞队列里
+            int get_lock = table.get_x_lock(session);
+            if (get_lock != -1) {
+              System.out.println("get x lock");
+              if (get_lock == 1) {
+                ArrayList<String> tmp = x_lock_dict.get(session);
+                if (tmp == null) {
+                  ArrayList<String> tmp1 = new ArrayList<String>();
+                  tmp1.add(tableName);
+                  x_lock_dict.put(session, tmp1);
+                } else {
+                  tmp.add(tableName);
+                  x_lock_dict.put(session, tmp);
+                }
+              }
+              session_queue.remove(0);
+              break;
+            }
+          }
+        }
+      }
 
+      // update
       if (ctx.K_WHERE() == null) {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
@@ -415,6 +585,7 @@ public class Manager {
         SQLParser.ComparatorContext comparator = condition.comparator();
         SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
         String value = valueComparer.literalValue().getText();
+
         int columnIndex = -1;
         Column curColumn = null;
         for (int i = 0; i < columns.size(); i++) {
@@ -427,7 +598,6 @@ public class Manager {
         if (columnIndex == -1) {
           throw new AttributeNotExistException();
         }
-
         Entry comparedEntry = curColumn.parseEntry(value);
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
@@ -447,9 +617,20 @@ public class Manager {
         }
       }
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
+      // 判断是否默认commit
+      if (!transaction_list.contains(
+          session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+        // 释放锁
+        Database the_database = curDatabase;
+        ArrayList<String> table_list = x_lock_dict.get(session);
+        for (String table_name : table_list) {
+          Table the_table = the_database.get(table_name);
+          the_table.free_x_lock(session);
+        }
+        table_list.clear();
+        x_lock_dict.put(session, table_list);
+      }
+    } finally {
     }
   }
 
@@ -468,9 +649,73 @@ public class Manager {
     return cross_table;
   }
 
-  public QueryResult select(SQLParser.SelectStmtContext ctx) {
+  public QueryResult select(SQLParser.SelectStmtContext ctx, long session) {
     try {
-      // TODO: lock, from multiple tables
+      // 获取select语句包括的table names
+      ArrayList<String> table_names = new ArrayList<>();
+      for (SQLParser.TableNameContext subCtx : ctx.tableQuery(0).tableName()) {
+        System.out.println("table name: " + subCtx.getText().toLowerCase());
+        table_names.add(subCtx.getText().toLowerCase());
+      }
+
+      // lock
+      while (true) {
+        if (!session_queue.contains(session)) // 不在之前的阻塞队列里
+        {
+          ArrayList<Integer> lock_result = new ArrayList<>();
+          for (String name : table_names) {
+            Table the_table = curDatabase.get(name);
+            int get_lock = the_table.get_s_lock(session);
+            lock_result.add(get_lock);
+          }
+          if (lock_result.contains(-1)) // 有没拿到s锁的
+          {
+            for (String table_name : table_names) {
+              Table the_table = curDatabase.get(table_name);
+              the_table.free_s_lock(session);
+            }
+            session_queue.add(session);
+          } else {
+            // 拿到了s锁，在manager里的s_lock_list里加
+            ArrayList<String> tmp = s_lock_dict.get(session);
+            if (tmp == null) {
+              ArrayList<String> tmp1 = new ArrayList<String>();
+              for (String table_name : table_names) {
+                tmp1.add(table_name);
+              }
+              s_lock_dict.put(session, tmp1);
+            } else {
+              for (String table_name : table_names) {
+                tmp.add(table_name);
+              }
+              s_lock_dict.put(session, tmp);
+            }
+            break;
+          }
+        } else // 之前等待的session
+        {
+          if (session_queue.get(0) == session) // 只查看阻塞队列开头session
+          {
+            ArrayList<Integer> lock_result = new ArrayList<>();
+            for (String name : table_names) {
+              Table the_table = curDatabase.get(name);
+              int get_lock = the_table.get_s_lock(session);
+              lock_result.add(get_lock);
+            }
+            if (!lock_result.contains(-1)) {
+              session_queue.remove(0);
+              break;
+            } else {
+              for (String table_name : table_names) {
+                Table the_table = curDatabase.get(table_name);
+                the_table.free_s_lock(session);
+              }
+              throw new RuntimeException("Read uncommitted data!");
+            }
+          }
+        }
+      }
+
       QueryTable finalTable = null;
       // from TABLE
       SQLParser.TableQueryContext query = ctx.tableQuery().get(0); // 只有1个query
@@ -507,11 +752,23 @@ public class Manager {
       }
       if (!isSelectAll) finalTable.filteredOnColumns(columnIndexs);
 
+      if (seperateLevel == "READ_COMMITTED") {
+        // free s lock
+        for (String table_name : table_names) {
+          Table the_table = curDatabase.get(table_name);
+          the_table.free_s_lock(session);
+        }
+      } else if (seperateLevel == "SERIALIZABLE") {
+        if (!transaction_list.contains(session)) { // 单句
+          // free s lock
+          for (String table_name : table_names) {
+            Table the_table = curDatabase.get(table_name);
+            the_table.free_s_lock(session);
+          }
+        }
+      }
       return finalTable.toQueryResult();
-
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
+    } finally {
     }
   }
 
@@ -570,7 +827,7 @@ public class Manager {
 
   private void recover() {
 
-    lock.writeLock().lock();
+    //    lock.writeLock().lock();
     try {
       File readDatabasesFile = new File(MANAGER_DATAPATH);
       if (!readDatabasesFile.exists()) return;
@@ -587,7 +844,67 @@ public class Manager {
         // throw exception
       }
     } finally {
-      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
+    }
+  }
+
+  /*
+  开始transaction
+  */
+  public void beginTransaction(SQLParser.BeginTransactionStmtContext ctx, long session) {
+    try {
+      // 如果是新开启的一个事务，要新创建s,x锁记录表
+      if (transaction_list == null || !transaction_list.contains(session)) {
+        transaction_list.add(session);
+        System.out.println(transaction_list);
+        ArrayList<String> s_lock_tables = new ArrayList<>();
+        ArrayList<String> x_lock_tables = new ArrayList<>();
+        s_lock_dict.put(session, s_lock_tables);
+        x_lock_dict.put(session, x_lock_tables);
+      } else {
+        System.out.println("not a new session");
+      }
+
+    } finally {
+
+    }
+  }
+
+  /*
+  commit
+   */
+  public void commit(SQLParser.CommitStmtContext ctx, long session) {
+    try {
+      if (transaction_list.contains(session)) {
+        Database the_database = curDatabase;
+        transaction_list.remove(session);
+        // free x lock
+        ArrayList<String> x_table_list = x_lock_dict.get(session);
+        for (String table_name : x_table_list) {
+          Table the_table = the_database.get(table_name);
+          the_table.free_x_lock(session);
+        }
+        x_table_list.clear();
+        x_lock_dict.put(session, x_table_list);
+
+        // if SERIALIZABLE free s lock
+        if (seperateLevel == "SERIALIZABLE") {
+          System.out.println("free s lock");
+          ArrayList<String> s_table_list =
+              s_lock_dict.get(session); // 虽然更新了Table里的s_lock_list，但是没更新manager里的s_lock_dict
+          System.out.println(s_table_list);
+          for (String table_name : s_table_list) {
+            Table the_table = the_database.get(table_name);
+            the_table.free_s_lock(session);
+          }
+          s_table_list.clear();
+          s_lock_dict.put(session, s_table_list);
+        }
+      } else {
+        System.out.println("session not in the list");
+      }
+    } finally {
+
     }
   }
 

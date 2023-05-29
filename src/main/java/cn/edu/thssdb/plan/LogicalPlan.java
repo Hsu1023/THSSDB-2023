@@ -25,5 +25,7 @@ public abstract class LogicalPlan {
     DELETE,
     UPDATE,
     SELECT,
+    BEGIN_TRANS,
+    COMMIT,
   }
 }
