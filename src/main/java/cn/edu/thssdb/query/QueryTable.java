@@ -66,6 +66,20 @@ public class QueryTable implements Iterator<Row> {
     }
   }
 
+  // 笛卡尔积
+  public QueryTable(QueryTable left_table, QueryTable right_table) {
+    (this.columns = new ArrayList<>(left_table.columns)).addAll(right_table.columns);
+    this.rows = new ArrayList<>();
+
+    for (Row left_row : left_table.rows) {
+      for (Row right_row : right_table.rows) {
+        Row new_row = new Row(left_row.getEntries());
+        new_row.getEntries().addAll(right_row.getEntries());
+        this.rows.add(new_row);
+      }
+    }
+  }
+
   @Override
   public boolean hasNext() {
     // TODO
@@ -117,13 +131,7 @@ public class QueryTable implements Iterator<Row> {
     ArrayList<Row> rows = new ArrayList<Row>();
 
     if (updateCondition != null) {
-      attrName =
-          updateCondition
-              .expression(0)
-              .comparer()
-              .columnFullName()
-              .columnName()
-              .getText();
+      attrName = updateCondition.expression(0).comparer().columnFullName().columnName().getText();
       attrValue = updateCondition.expression(1).comparer().literalValue().getText();
       attrIndex = getIndexOfAttrName(columns, attrName);
       comparator = updateCondition.comparator();

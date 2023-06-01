@@ -634,17 +634,52 @@ public class Manager {
 
   QueryTable getFinalQueryTable(SQLParser.TableQueryContext query) {
     Database database = Manager.getInstance().curDatabase;
+    List<SQLParser.TableNameContext> table_list = query.tableName();
 
     SQLParser.ConditionContext joinCondition = null;
     if (query.K_ON() != null) {
       joinCondition = query.multipleCondition().condition();
     }
 
+    // 先找到条件左右的table和column
+    String leftColumnName = null, rightColumnName = null;
+    leftColumnName = joinCondition.expression(0).getText();
+    System.out.println(leftColumnName);
+    rightColumnName = joinCondition.expression(1).getText();
+    System.out.println(rightColumnName);
     QueryTable left_table = null, right_table = null;
-    left_table = new QueryTable(database.get(query.tableName(0).getText()));
-    right_table = new QueryTable(database.get(query.tableName(1).getText()));
+    // 找左侧table
+    for (SQLParser.TableNameContext table : table_list) {
+      QueryTable tmp = new QueryTable(database.get(table.getText()));
+      int leftColumnIndex = QueryTable.getIndexOfAttrName(tmp.columns, leftColumnName);
+      if (leftColumnIndex != -1) {
+        left_table = tmp;
+        table_list.remove(table);
+        break;
+      }
+    }
+    // 找右侧table
+    for (SQLParser.TableNameContext table : table_list) {
+      QueryTable tmp = new QueryTable(database.get(table.getText()));
+      int rightColumnIndex = QueryTable.getIndexOfAttrName(tmp.columns, rightColumnName);
+      if (rightColumnIndex != -1) {
+        right_table = tmp;
+        table_list.remove(table);
+        break;
+      }
+    }
     QueryTable cross_table = new QueryTable(left_table, right_table, joinCondition);
-    return cross_table;
+    // 如果只有两张表，cross_table就是最终结果了
+    if (table_list.size() == 0) {
+      return cross_table;
+    }
+    // 否则，要返回cross_table和其它表的笛卡尔积
+    else {
+      for (SQLParser.TableNameContext table : table_list) {
+        cross_table = new QueryTable(cross_table, new QueryTable(database.get(table.getText())));
+      }
+      return cross_table;
+    }
   }
 
   public QueryResult select(SQLParser.SelectStmtContext ctx, long session) {
@@ -655,7 +690,6 @@ public class Manager {
         System.out.println("table name: " + subCtx.getText());
         table_names.add(subCtx.getText());
       }
-
       // lock
       while (true) {
         if (!session_queue.contains(session)) // 不在之前的阻塞队列里
@@ -713,7 +747,6 @@ public class Manager {
           }
         }
       }
-
       QueryTable finalTable = null;
       // from TABLE
       SQLParser.TableQueryContext query = ctx.tableQuery().get(0); // 只有1个query
