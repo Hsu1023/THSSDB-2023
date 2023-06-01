@@ -43,8 +43,8 @@ public class QueryTable implements Iterator<Row> {
     //      System.out.println("join condition is null");
     //    }
     // 获取join条件下左右两列在各自表中的名字和index
-    leftColumnName = joinCondition.expression(0).getText().toLowerCase();
-    rightColumnName = joinCondition.expression(1).getText().toLowerCase();
+    leftColumnName = joinCondition.expression(0).getText();
+    rightColumnName = joinCondition.expression(1).getText();
     leftColumnIndex = QueryTable.getIndexOfAttrName(left_table.columns, leftColumnName);
     rightColumnIndex = QueryTable.getIndexOfAttrName(right_table.columns, rightColumnName);
 
@@ -123,8 +123,7 @@ public class QueryTable implements Iterator<Row> {
               .comparer()
               .columnFullName()
               .columnName()
-              .getText()
-              .toLowerCase();
+              .getText();
       attrValue = updateCondition.expression(1).comparer().literalValue().getText();
       attrIndex = getIndexOfAttrName(columns, attrName);
       comparator = updateCondition.comparator();

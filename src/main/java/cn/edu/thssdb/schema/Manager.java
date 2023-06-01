@@ -633,16 +633,16 @@ public class Manager {
   }
 
   QueryTable getFinalQueryTable(SQLParser.TableQueryContext query) {
-    QueryTable left_table = null, right_table = null;
     Database database = Manager.getInstance().curDatabase;
-    System.out.println(database.get(query.tableName(0).getText()));
-    System.out.println(database.get(query.tableName(1).getText()));
-    left_table = new QueryTable(database.get(query.tableName(0).getText()));
-    right_table = new QueryTable(database.get(query.tableName(1).getText()));
+
     SQLParser.ConditionContext joinCondition = null;
     if (query.K_ON() != null) {
       joinCondition = query.multipleCondition().condition();
     }
+
+    QueryTable left_table = null, right_table = null;
+    left_table = new QueryTable(database.get(query.tableName(0).getText()));
+    right_table = new QueryTable(database.get(query.tableName(1).getText()));
     QueryTable cross_table = new QueryTable(left_table, right_table, joinCondition);
     return cross_table;
   }
