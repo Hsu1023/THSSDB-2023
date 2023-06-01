@@ -86,12 +86,7 @@ public class QueryTable implements Iterator<Row> {
   }
 
   public static QueryTable fromQueryCtx(SQLParser.TableQueryContext ctx) {
-    if (ctx.getChildCount() == 1) {
-      return QueryTable.getQueryTableFromSingleTable(ctx.tableName(0).getText());
-    }
-
-    // TODO: multi-table query
-    return new QueryTable();
+    return QueryTable.getQueryTableFromSingleTable(ctx.tableName(0).getText());
   }
 
   public static int getIndexOfAttrName(ArrayList<Column> columns, String AttrName) {

@@ -156,8 +156,7 @@ public class Manager {
                   .columnName()
                   .children
                   .get(0)
-                  .toString()
-                  .toLowerCase(Locale.ROOT);
+                  .toString();
           // 抽出数据项类别
           String typeName =
               ((SQLParser.ColumnDefContext) ctx.getChild(i)).typeName().children.get(0).toString();
@@ -237,8 +236,7 @@ public class Manager {
                           (((SQLParser.TableConstraintContext) ctx.getChild(i)).children.get(j)))
                       .children
                       .get(0)
-                      .toString()
-                      .toLowerCase(Locale.ROOT);
+                      .toString();
               primaryKeys.add(columnName);
             }
             //              System.out.println(primaryKeys);
@@ -454,7 +452,7 @@ public class Manager {
       } else {
         SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
         SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
-        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        String attr = attrComparer.columnFullName().columnName().getText();
         SQLParser.ComparatorContext comparator = condition.comparator();
         SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
         String value = valueComparer.literalValue().getText();
@@ -581,7 +579,7 @@ public class Manager {
       } else {
         SQLParser.ConditionContext condition = ctx.multipleCondition().condition();
         SQLParser.ComparerContext attrComparer = condition.expression(0).comparer();
-        String attr = attrComparer.columnFullName().columnName().getText().toLowerCase();
+        String attr = attrComparer.columnFullName().columnName().getText();
         SQLParser.ComparatorContext comparator = condition.comparator();
         SQLParser.ComparerContext valueComparer = condition.expression(1).comparer();
         String value = valueComparer.literalValue().getText();
@@ -654,8 +652,8 @@ public class Manager {
       // 获取select语句包括的table names
       ArrayList<String> table_names = new ArrayList<>();
       for (SQLParser.TableNameContext subCtx : ctx.tableQuery(0).tableName()) {
-        System.out.println("table name: " + subCtx.getText().toLowerCase());
-        table_names.add(subCtx.getText().toLowerCase());
+        System.out.println("table name: " + subCtx.getText());
+        table_names.add(subCtx.getText());
       }
 
       // lock
@@ -745,7 +743,7 @@ public class Manager {
           isSelectAll = true;
           break;
         }
-        String columnName = columnContext.columnFullName().getText().toLowerCase();
+        String columnName = columnContext.columnFullName().getText();
         finalColumnNames.add(columnName);
         int index = QueryTable.getIndexOfAttrName(finalTable.columns, columnName);
         columnIndexs.add(index);
@@ -787,7 +785,7 @@ public class Manager {
         if (column.getColumnType().toString().toUpperCase(Locale.ROOT).equals("STRING")) {
           output =
               output
-                  + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                  + column.getColumnName().toString()
                   + "("
                   + column.getMaxLength()
                   + ")"
@@ -797,7 +795,7 @@ public class Manager {
         } else {
           output =
               output
-                  + column.getColumnName().toString().toLowerCase(Locale.ROOT)
+                  + column.getColumnName().toString()
                   + "\t"
                   + column.getColumnType().toString().toUpperCase(Locale.ROOT)
                   + "\t";
