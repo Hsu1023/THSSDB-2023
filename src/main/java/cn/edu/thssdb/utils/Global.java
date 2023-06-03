@@ -10,7 +10,6 @@ public class Global {
   public static int DEFAULT_SERVER_PORT = 6667;
   public static String DEFAULT_USER_NAME = "root";
   public static String DEFAULT_PASSWORD = "root";
-
   public static String CLI_PREFIX = "ThssDB2023>";
   public static final String SHOW_TIME = "show time;";
   public static final String CONNECT = "connect";
@@ -28,4 +27,6 @@ public class Global {
   public static final String LOG_PATH = "./log";
 
   public static final int ARRAY_LIST_MAX_LENGTH = (int) (3 * Global.fanout) + 1;
+
+  public static final int BUFFER_POOL_SIZE = 1024;
 }

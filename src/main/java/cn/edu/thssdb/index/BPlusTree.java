@@ -7,27 +7,27 @@ public final class BPlusTree<K extends Comparable<K>, V> implements Iterable<Pai
 
   BPlusTreeNode<K, V> root;
 
-  String path;
-
   public int size;
 
   PageManager pageManager;
 
   // recover
-  public BPlusTree(String path, Column[] columns, int primaryIndex) {
-    this.pageManager = new PageManager(path, columns, primaryIndex);
+  public BPlusTree(String databaseName, String tableName, Column[] columns, int primaryIndex) {
+    this.pageManager = new PageManager(databaseName, tableName, columns, primaryIndex);
     this.root = pageManager.getRootNode();
     this.size = initTreeSize();
-    System.out.println("INIT_SIZE OF " + path + " " + this.size);
-    this.path = path;
   }
 
-  public BPlusTree(String path, Column[] columns, int primaryIndex, Boolean recoverOrNot) {
-    this.pageManager = new PageManager(path, columns, primaryIndex, recoverOrNot);
+  public BPlusTree(
+      String databaseName,
+      String tableName,
+      Column[] columns,
+      int primaryIndex,
+      Boolean recoverOrNot) {
+    this.pageManager =
+        new PageManager(databaseName, tableName, columns, primaryIndex, recoverOrNot);
     this.root = pageManager.getRootNode();
     this.size = initTreeSize();
-    System.out.println("INIT_SIZE OF " + path + " " + this.size);
-    this.path = path;
   }
 
   int initTreeSize() {

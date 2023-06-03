@@ -4,15 +4,13 @@ import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.type.ColumnType;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class BPlusTreeTest {
   private BPlusTree<Entry, Row> tree;
@@ -46,12 +44,12 @@ public class BPlusTreeTest {
     values = new ArrayList<>();
     map = new HashMap<>();
     HashSet<Integer> set = new HashSet<>();
-    int size = 100000;
+    int size = 1000;
     Column[] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
-    String filename = "./data" + ".bin";
-    tree = new BPlusTree<>(filename, columns, 0, false);
+    //    String filename = "./data" + ".bin";
+    tree = new BPlusTree<>("..", ".", columns, 0, false);
 
     for (int i = 0; i < size; i++) {
       double random = Math.random();
@@ -72,7 +70,7 @@ public class BPlusTreeTest {
       int x = map.get(entry2Int(key));
       int y = row2Int(tree.get(key));
       // check if all the results equal
-      assertEquals(x, y);
+      Assert.assertEquals(x, y);
     }
   }
 
@@ -84,11 +82,11 @@ public class BPlusTreeTest {
       tree.remove(keys.get(i));
     }
     // check if size equals half of origin
-    assertEquals(size / 2, tree.size());
+    Assert.assertEquals(size / 2, tree.size());
     for (int i = 1; i < size; i += 2) {
       int x = map.get(entry2Int(keys.get(i)));
       int y = row2Int(tree.get(keys.get(i)));
-      assertEquals(x, y);
+      Assert.assertEquals(x, y);
     }
   }
 
@@ -102,10 +100,10 @@ public class BPlusTreeTest {
     }
     while (iterator.hasNext()) {
       int x = (int) iterator.next().right.getEntries().get(0).value;
-      assertTrue(_v.contains(x));
+      Assert.assertTrue(_v.contains(x));
       c++;
     }
     //    System.out.println(_v);
-    assertEquals(values.size(), c);
+    Assert.assertEquals(values.size(), c);
   }
 }

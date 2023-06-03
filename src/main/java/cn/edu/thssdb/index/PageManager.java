@@ -4,18 +4,18 @@ import cn.edu.thssdb.schema.Column;
 import cn.edu.thssdb.schema.Entry;
 import cn.edu.thssdb.schema.Row;
 import cn.edu.thssdb.type.ColumnType;
-import cn.edu.thssdb.utils.ByteBufferReader;
-import cn.edu.thssdb.utils.ByteBufferWriter;
-import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.*;
 
 public class PageManager {
-  String path;
+  //  String path;
+
+  String databaseName;
+  String tableName;
   int totalPageNum;
 
   public int curUsedPageNum;
@@ -28,8 +28,10 @@ public class PageManager {
 
   public int rootPageId;
 
-  public PageManager(String path, Column[] columns, int primaryIndex) {
-    this.path = path;
+  public PageManager(String databaseName, String tableName, Column[] columns, int primaryIndex) {
+    //    this.path = path;
+    this.databaseName = databaseName;
+    this.tableName = tableName;
     this.columns = columns;
     this.primaryIndex = primaryIndex;
     this.curUsedPageNum = 0;
@@ -39,15 +41,121 @@ public class PageManager {
     initFile(true);
   }
 
-  public PageManager(String path, Column[] columns, int primaryIndex, Boolean recoverOrNot) {
-    this.path = path;
+  public PageManager(
+      String databaseName,
+      String tableName,
+      Column[] columns,
+      int primaryIndex,
+      Boolean recoverFromFileOrNot) {
+    //    this.path = path;
+    this.databaseName = databaseName;
+    this.tableName = tableName;
     this.columns = columns;
     this.primaryIndex = primaryIndex;
     this.curUsedPageNum = 0;
     this.totalPageNum = -1;
     this.vacantPage = new ArrayList<>();
     getKVSize();
-    initFile(recoverOrNot);
+    initFile(recoverFromFileOrNot);
+  }
+
+  private static HashMap<String, Integer> bufferIndex = new HashMap<>();
+  private static LinkedList<String> bufferLinkedList =
+      new LinkedList<>(); // 储存bufferName和对应pool的index
+  private static byte[][] bufferPool = new byte[Global.BUFFER_POOL_SIZE][Global.PAGE_SIZE];
+
+  private static byte[] getBuffer(int index) {
+    if (index >= 1 && index <= Global.BUFFER_POOL_SIZE) {
+      return bufferPool[index - 1];
+    } else {
+      throw new IllegalArgumentException("Invalid cache index");
+    }
+  }
+
+  private static byte[] readBuffer(String databaseName, String tableName, int pageId) {
+    String hashKey = databaseName + "@" + tableName + "@" + pageId;
+    Boolean contains = bufferIndex.containsKey(hashKey);
+    if (contains) {
+      int index = bufferIndex.get(hashKey);
+      bufferLinkedList.indexOf(hashKey);
+      bufferLinkedList.remove(hashKey);
+      bufferLinkedList.addFirst(hashKey);
+      return bufferPool[index];
+    } else {
+      String pathRead = PathUtil.getBinFilePath(databaseName, tableName);
+      if (bufferLinkedList.size() == Global.BUFFER_POOL_SIZE) {
+        String lastHashKey = bufferLinkedList.removeLast();
+        int index = bufferIndex.get(lastHashKey);
+        String pathWrite =
+            PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
+        int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
+        try (RandomAccessFile rafRead = new RandomAccessFile(new File(pathRead), "r");
+            RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+          rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
+          rafWrite.write(bufferPool[index]);
+          rafRead.seek(pageId * Global.PAGE_SIZE);
+          rafRead.read(bufferPool[index]);
+          bufferLinkedList.addFirst(hashKey);
+          bufferIndex.put(hashKey, index);
+          bufferIndex.remove(lastHashKey);
+          return bufferPool[index];
+        } catch (Exception e) {
+          e.printStackTrace();
+          return null;
+        }
+      } else {
+        try (RandomAccessFile raf = new RandomAccessFile(new File(pathRead), "r")) {
+          raf.seek(pageId * Global.PAGE_SIZE);
+          bufferLinkedList.addFirst(hashKey);
+          int index = bufferLinkedList.size() - 1;
+          bufferIndex.put(hashKey, index);
+          raf.read(bufferPool[index]);
+          return bufferPool[index];
+        } catch (Exception e) {
+          e.printStackTrace();
+          return null;
+        }
+      }
+    }
+  }
+
+  private static byte[] writeBuffer(String databaseName, String tableName, int pageId, byte[] buf) {
+    String hashKey = databaseName + "@" + tableName + "@" + pageId;
+    Boolean contains = bufferIndex.containsKey(hashKey);
+    if (contains) {
+      int index = bufferIndex.get(hashKey);
+      bufferLinkedList.indexOf(hashKey);
+      bufferLinkedList.remove(hashKey);
+      bufferLinkedList.addFirst(hashKey);
+      bufferPool[index] = buf;
+      return bufferPool[index];
+    } else {
+      if (bufferLinkedList.size() == Global.BUFFER_POOL_SIZE) {
+        String lastHashKey = bufferLinkedList.removeLast();
+        int index = bufferIndex.get(lastHashKey);
+        String pathWrite =
+            PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
+        int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
+        try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+          rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
+          rafWrite.write(bufferPool[index]);
+          bufferPool[index] = buf;
+          bufferLinkedList.addFirst(hashKey);
+          bufferIndex.put(hashKey, index);
+          bufferIndex.remove(lastHashKey);
+          return bufferPool[index];
+        } catch (Exception e) {
+          e.printStackTrace();
+          return null;
+        }
+      } else {
+        bufferLinkedList.addFirst(hashKey);
+        int index = bufferLinkedList.size() - 1;
+        bufferIndex.put(hashKey, index);
+        bufferPool[index] = buf;
+        return bufferPool[index];
+      }
+    }
   }
 
   public int newPage() {
@@ -72,10 +180,11 @@ public class PageManager {
     vacantPage.add(vacant);
   }
 
-  void initFile(Boolean recoverOrNot) {
+  void initFile(Boolean recoverFromFileOrNot) {
     try {
+      String path = PathUtil.getBinFilePath(databaseName, tableName);
       File file = new File(path);
-      if (recoverOrNot && file.exists()) {
+      if (recoverFromFileOrNot && file.exists()) {
         this.readHeader();
         if (rootPageId != -1 && rootPageId <= totalPageNum && rootPageId > 0) return;
         System.err.println("File is destroyed, recreate a new file...");
@@ -94,23 +203,19 @@ public class PageManager {
   }
 
   void readHeader() {
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
-      raf.seek(0);
-      byte b[] = new byte[Global.PAGE_SIZE];
-      raf.read(b);
-      ByteBufferReader reader = new ByteBufferReader(b);
-      totalPageNum = reader.readInt();
-      rootPageId = reader.readInt();
-      curUsedPageNum = reader.readInt();
-    } catch (IOException e) {
-      e.printStackTrace();
+    byte b[] = readBuffer(databaseName, tableName, 0);
+    if (b == null) {
       rootPageId = -1;
+      return;
     }
+    ByteBufferReader reader = new ByteBufferReader(b);
+    totalPageNum = reader.readInt();
+    rootPageId = reader.readInt();
+    curUsedPageNum = reader.readInt();
   }
 
   void writeInternalNode(int pageId, BPlusTreeInternalNode node) {
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
-
+    try {
       ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
       writer.writeChar('I');
       int size = node.nodeSize;
@@ -124,10 +229,7 @@ public class PageManager {
         writeKey(writer, keyColumn, e);
       }
       writer.writeInt(node.readChildFromDisk(size));
-
-      raf.seek(pageId * Global.PAGE_SIZE);
-      raf.write(writer.getBuf());
-
+      writeBuffer(databaseName, tableName, pageId, writer.getBuf());
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -139,17 +241,15 @@ public class PageManager {
       writeHeader();
       BPlusTreeLeafNode newNode = new BPlusTreeLeafNode<>(0, rootPageId, -1, this);
       writeLeafNode(rootPageId, newNode);
-      return (BPlusTreeNode)newNode;
+      return (BPlusTreeNode) newNode;
     } else return this.readNode(rootPageId);
   }
 
   public BPlusTreeNode readNode(int pageId) {
     BPlusTreeNode res = null;
     if (pageId < 0) return null;
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "r")) {
-      raf.seek(pageId * Global.PAGE_SIZE);
-      byte b[] = new byte[Global.PAGE_SIZE];
-      raf.read(b);
+    try {
+      byte b[] = readBuffer(databaseName, tableName, pageId);
       ByteBufferReader reader = new ByteBufferReader(b);
       char type = reader.readChar();
       if (type == 'I') res = readInternalNode(reader, pageId);
@@ -200,14 +300,12 @@ public class PageManager {
   }
 
   void writeHeader() {
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
-      raf.seek(0);
-      raf.writeInt(totalPageNum);
-      raf.writeInt(rootPageId);
-      raf.writeInt(curUsedPageNum);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+
+    ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
+    writer.writeInt(totalPageNum);
+    writer.writeInt(rootPageId);
+    writer.writeInt(curUsedPageNum);
+    writeBuffer(databaseName, tableName, 0, writer.getBuf());
   }
 
   void updateRoot(int rtPageId) {
@@ -216,7 +314,7 @@ public class PageManager {
   }
 
   void writeLeafNode(int pageId, BPlusTreeLeafNode node) {
-    try (RandomAccessFile raf = new RandomAccessFile(new File(path), "rw")) {
+    try {
       ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
       writer.writeChar('L');
       int size = node.nodeSize;
@@ -231,8 +329,7 @@ public class PageManager {
         writeKey(writer, keyColumn, e);
         writeValue(writer, columns, r);
       }
-      raf.seek(pageId * Global.PAGE_SIZE);
-      raf.write(writer.getBuf());
+      writeBuffer(databaseName, tableName, pageId, writer.getBuf());
     } catch (Exception e) {
       e.printStackTrace();
     }
@@ -303,6 +400,7 @@ public class PageManager {
   }
 
   void flush() {
+    String path = PathUtil.getBinFilePath(databaseName, tableName);
     File file = new File(path);
     if (totalPageNum == -1) {
       try (RandomAccessFile raf = new RandomAccessFile(file, "rw")) {

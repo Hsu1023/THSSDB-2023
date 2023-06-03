@@ -52,7 +52,7 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    this.index = new BPlusTree<>(this.getBinPath(), columns, primaryIndex);
+    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex);
 
     // TODO initiate lock status.
     //    recover();
