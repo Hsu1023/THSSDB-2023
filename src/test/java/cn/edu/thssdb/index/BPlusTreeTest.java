@@ -46,7 +46,7 @@ public class BPlusTreeTest {
     values = new ArrayList<>();
     map = new HashMap<>();
     HashSet<Integer> set = new HashSet<>();
-    int size = 1000;
+    int size = 100000;
     Column[] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
@@ -103,7 +103,6 @@ public class BPlusTreeTest {
     while (iterator.hasNext()) {
       int x = (int) iterator.next().right.getEntries().get(0).value;
       assertTrue(_v.contains(x));
-      //      System.out.println(x);
       c++;
     }
     //    System.out.println(_v);

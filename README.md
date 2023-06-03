@@ -24,4 +24,3 @@ https://apache-iotdb.feishu.cn/docx/RHnTd3Y3tocJQSxIIJFcDmlHnDd
 | buf缓冲一个页面，RAF整页读写 | 434ms/635ms/330ms    | 4.796s/7.556s/3.727s    | 45.927s/76s/45.901s  |
 
 > 注：X/Y/Z分别代表testGet/testRemove/testIterator的时间
-

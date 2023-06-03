@@ -137,7 +137,9 @@ public class PageManager {
     if (rootPageId == -1) {
       rootPageId = this.newPage();
       writeHeader();
-      return new BPlusTreeLeafNode<>(0, rootPageId, -1, this);
+      BPlusTreeLeafNode newNode = new BPlusTreeLeafNode<>(0, rootPageId, -1, this);
+      writeLeafNode(rootPageId, newNode);
+      return (BPlusTreeNode)newNode;
     } else return this.readNode(rootPageId);
   }
 

@@ -13,6 +13,7 @@ public final class BPlusTree<K extends Comparable<K>, V> implements Iterable<Pai
 
   PageManager pageManager;
 
+  // recover
   public BPlusTree(String path, Column[] columns, int primaryIndex) {
     this.pageManager = new PageManager(path, columns, primaryIndex);
     this.root = pageManager.getRootNode();
