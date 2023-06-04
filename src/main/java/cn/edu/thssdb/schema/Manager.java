@@ -6,6 +6,7 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.Logger;
 
 import java.io.*;
 import java.util.*;
@@ -31,6 +32,8 @@ public class Manager {
   public static Manager getInstance() {
     return Manager.ManagerHolder.INSTANCE;
   }
+
+  public static Logger logger = new Logger(Global.LOG_PATH, "DATABASE");
 
   public Manager() {
     // TODO
@@ -76,6 +79,7 @@ public class Manager {
     //    lock.writeLock().lock();
     try {
       if (databases.containsKey(name)) {
+        logger.dropDatabase(name);
         Database db = databases.get(name);
         databases.remove(name);
         change = true;
@@ -363,6 +367,7 @@ public class Manager {
         entries.add(entry);
       }
       Row newRow = new Row(entries);
+      logger.insert(database.getName(), table.tableName, newRow);
       table.insert(newRow);
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       if (seperateLevel == "SERIALIZABLE") {
@@ -447,6 +452,7 @@ public class Manager {
       if (ctx.K_WHERE() == null) {
         while (rowIterator.hasNext()) {
           Row curRow = rowIterator.next();
+          logger.delete(database.getName(), table.tableName, curRow);
           table.delete(curRow);
         }
       } else {
@@ -478,8 +484,10 @@ public class Manager {
               || (comparator.GE() != null && curEntry.compareTo(comparedEntry) >= 0)
               || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
               || (comparator.GT() != null && curEntry.compareTo(comparedEntry) > 0)
-              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0))
+              || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
+            logger.delete(database.getName(), table.tableName, curRow);
             table.delete(curRow);
+          }
         }
       }
 
@@ -574,6 +582,7 @@ public class Manager {
           ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
           oldRowEntries.set(updateIndex, attrValue);
           Row newRow = new Row(oldRowEntries);
+          logger.update(database.getName(), table.tableName, curRow, newRow);
           table.update(curRow, newRow);
         }
       } else {
@@ -610,6 +619,7 @@ public class Manager {
             ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
             oldRowEntries.set(updateIndex, attrValue);
             Row newRow = new Row(oldRowEntries);
+            logger.update(database.getName(), table.tableName, curRow, newRow);
             table.update(curRow, newRow);
           }
         }
@@ -850,6 +860,7 @@ public class Manager {
   public void deleteTable(String name) {
     try {
       Database database = getAndAssumeCurrentDatabase();
+      logger.dropTable(curDatabase.getName(), name);
       database.dropTable(name);
     } finally {
 
@@ -867,9 +878,20 @@ public class Manager {
         BufferedReader reader = new BufferedReader(fileReader);
         String line;
         while ((line = reader.readLine()) != null) {
-          createDatabaseIfNotExists(line);
+          createDatabaseIfNotExists(line); // recover table inside init databse
         }
         reader.close();
+
+        List<String> lines = logger.readLog();
+        for (int i = 0; i < lines.size(); i++) {
+          line = lines.get(i);
+          String[] log = line.split("@", 4);
+          Database tmpDatabase = databases.get(log[1]);
+          Table tmpTable = tmpDatabase.get(log[2]);
+          if (log[0].equals("DELETE")) tmpTable.delete(log[3]);
+          else if (log[0].equals("INSERT")) tmpTable.insert(log[3]);
+        }
+
       } catch (Exception e) {
         e.printStackTrace();
         // throw exception

@@ -73,13 +73,14 @@ public class Database {
         throw new TableNotExistException();
       }
       Table table = tables.get(tableName);
+
       String tableMetaPath = table.getMetaDataPath();
       File tableMetaFile = new File(tableMetaPath);
       if (!tableMetaFile.exists() || !tableMetaFile.isFile() || !tableMetaFile.delete()) {
         throw new RuntimeException();
       }
 
-      String tableDataPath = table.getDataPath();
+      String tableDataPath = table.getBinPath();
       File tableDataFile = new File(tableDataPath);
       if (tableDataFile.exists() && (!tableDataFile.isFile() || !tableDataFile.delete())) {
         throw new RuntimeException();
@@ -106,7 +107,6 @@ public class Database {
   }
 
   private void recover() {
-
     lock.writeLock().lock();
     try {
       File tableFolderFile = new File(getTablesFolderPath());
@@ -159,5 +159,9 @@ public class Database {
     } finally {
       lock.readLock().unlock();
     }
+  }
+
+  public String getName() {
+    return name;
   }
 }

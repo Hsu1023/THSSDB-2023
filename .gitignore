@@ -6,3 +6,4 @@ data/
 target/
 data.bin
 ..bin
+log/

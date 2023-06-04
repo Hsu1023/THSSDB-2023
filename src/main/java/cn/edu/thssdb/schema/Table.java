@@ -52,7 +52,7 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex);
+    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
 
     // TODO initiate lock status.
     //    recover();
@@ -93,6 +93,28 @@ public class Table implements Iterable<Row> {
       // TODO lock control
       //      this.lock.writeLock().unlock();
     }
+  }
+
+  public void insert(String row) {
+    try {
+      String[] info = row.split(",");
+      ArrayList<Entry> entries = new ArrayList<>();
+      int i = 0;
+      for (Column c : columns) {
+        entries.add(new Entry(ColumnType.getColumnTypeValue(c.getColumnType(), info[i])));
+        i++;
+      }
+      index.put(entries.get(primaryIndex), new Row(entries));
+    } catch (Exception e) {
+      throw e;
+    }
+  }
+
+  public void delete(String row) {
+    ColumnType c = columns.get(primaryIndex).getColumnType();
+    String[] info = row.split(",");
+    Entry primaryEntry = new Entry(ColumnType.getColumnTypeValue(c, info[primaryIndex]));
+    index.remove(primaryEntry);
   }
 
   public Boolean contains(Row row) {
@@ -275,9 +297,9 @@ public class Table implements Iterable<Row> {
     return this.tableFolderPath + "_meta";
   }
 
-  public String getDataPath() {
-    return this.tableFolderPath + "_data";
-  }
+  //  public String getDataPath() {
+  //    return this.tableFolderPath + "_data";
+  //  }
 
   public String getBinPath() {
     return this.tableFolderPath + tableName + ".bin";
