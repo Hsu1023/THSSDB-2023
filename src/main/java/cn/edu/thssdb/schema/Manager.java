@@ -242,7 +242,7 @@ public class Manager {
               if (primaryKeys.contains(columnItems.get(j).getName())) {
                 columnItems.get(j).setPrimary(1);
               }
-            }
+            }t a
           }
           // foreign key constraint
           else if (tableConstraintContext.K_FOREIGN() != null) {
