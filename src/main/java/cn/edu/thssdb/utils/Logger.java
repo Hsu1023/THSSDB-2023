@@ -137,7 +137,12 @@ public class Logger {
     resetFile(lines);
   }
 
-  public void checkPoint() {}
+  public void checkPoint() {
+    List<String> lines = new ArrayList<>();
+    String log = "CHECKPOINT";
+    lines.add(log);
+    resetFile(lines);
+  }
 
   public void deleteFile() {
     File f = new File(this.full_path);

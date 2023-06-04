@@ -27,5 +27,6 @@ public abstract class LogicalPlan {
     SELECT,
     BEGIN_TRANS,
     COMMIT,
+    CHECKPOINT,
   }
 }

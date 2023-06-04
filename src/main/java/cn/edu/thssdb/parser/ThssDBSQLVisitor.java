@@ -88,4 +88,8 @@ public class ThssDBSQLVisitor extends SQLBaseVisitor<LogicalPlan> {
   public LogicalPlan visitCommitStmt(SQLParser.CommitStmtContext ctx) {
     return new CommitPlan(ctx);
   }
+
+  public LogicalPlan visitCheckpointStmt(SQLParser.CheckpointStmtContext ctx) {
+    return new CheckpointPlan();
+  }
 }

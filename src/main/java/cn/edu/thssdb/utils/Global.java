@@ -20,7 +20,7 @@ public class Global {
 
   public static final String DATA_PATH = "./data";
 
-  public static final int PAGE_SIZE = 8192;
+  public static final int PAGE_SIZE = 8192 * 2;
 
   public static final int INIT_PAGE_NUM = 4;
 

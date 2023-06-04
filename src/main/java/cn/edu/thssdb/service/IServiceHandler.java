@@ -60,104 +60,113 @@ public class IServiceHandler implements IService.Iface {
     //    System.out.println(req.statement);
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
-    switch (plan.getType()) {
-      case CREATE_DB:
-        System.out.println("[DEBUG] " + plan);
-        CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
-        manager.createDatabaseIfNotExists(createDBPlan.getDatabaseName());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+    try {
+      switch (plan.getType()) {
+        case CREATE_DB:
+          System.out.println("[DEBUG] " + plan);
+          CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
+          manager.createDatabaseIfNotExists(createDBPlan.getDatabaseName());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case SHOW_DB:
-        System.out.println("[DEBUG] " + plan);
-        ExecuteStatementResp resp_showdb = new ExecuteStatementResp(StatusUtil.success(), true);
-        resp_showdb.setColumnsList(Arrays.asList("Names of Databases"));
-        List<String> names = manager.getDatabaseNames();
-        List<List<String>> result = new ArrayList<>();
-        for (String name : names) result.add(Arrays.asList(name));
-        resp_showdb.setRowList(result);
-        return resp_showdb;
+        case SHOW_DB:
+          System.out.println("[DEBUG] " + plan);
+          ExecuteStatementResp resp_showdb = new ExecuteStatementResp(StatusUtil.success(), true);
+          resp_showdb.setColumnsList(Arrays.asList("Names of Databases"));
+          List<String> names = manager.getDatabaseNames();
+          List<List<String>> result = new ArrayList<>();
+          for (String name : names) result.add(Arrays.asList(name));
+          resp_showdb.setRowList(result);
+          return resp_showdb;
 
-      case DROP_DB:
-        System.out.println("[DEBUG] " + plan);
-        DropDatabasePlan dropDBPlan = (DropDatabasePlan) plan;
-        String dbName = dropDBPlan.getDatabaseName();
-        manager.deleteDatabase(dbName);
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case DROP_DB:
+          System.out.println("[DEBUG] " + plan);
+          DropDatabasePlan dropDBPlan = (DropDatabasePlan) plan;
+          String dbName = dropDBPlan.getDatabaseName();
+          manager.deleteDatabase(dbName);
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case USE_DB:
-        System.out.println("[DEBUG] " + plan);
-        UseDatabasePlan useDBPlan = (UseDatabasePlan) plan;
-        String currDB = useDBPlan.getDatabaseName();
-        manager.switchDatabase(currDB);
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case USE_DB:
+          System.out.println("[DEBUG] " + plan);
+          UseDatabasePlan useDBPlan = (UseDatabasePlan) plan;
+          String currDB = useDBPlan.getDatabaseName();
+          manager.switchDatabase(currDB);
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case CREATE_TB:
-        System.out.println("[DEBUG] " + plan);
-        CreateTablePlan createTBPlan = (CreateTablePlan) plan;
-        manager.createTableIfNotExist(createTBPlan.getCtx());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case CREATE_TB:
+          System.out.println("[DEBUG] " + plan);
+          CreateTablePlan createTBPlan = (CreateTablePlan) plan;
+          manager.createTableIfNotExist(createTBPlan.getCtx());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case SHOW_TB:
-        System.out.println("[DEBUG] " + plan);
-        ShowTablePlan showTBPlan = (ShowTablePlan) plan;
-        String tableMessage = manager.showTable(showTBPlan.getTableName());
-        ExecuteStatementResp resp_showtb = new ExecuteStatementResp(StatusUtil.success(), true);
-        resp_showtb.setColumnsList(Arrays.asList("Table Content"));
-        List<List<String>> res = new ArrayList<>();
-        res.add(Arrays.asList(tableMessage));
-        resp_showtb.setRowList(res);
-        return resp_showtb;
+        case SHOW_TB:
+          System.out.println("[DEBUG] " + plan);
+          ShowTablePlan showTBPlan = (ShowTablePlan) plan;
+          String tableMessage = manager.showTable(showTBPlan.getTableName());
+          ExecuteStatementResp resp_showtb = new ExecuteStatementResp(StatusUtil.success(), true);
+          resp_showtb.setColumnsList(Arrays.asList("Table Content"));
+          List<List<String>> res = new ArrayList<>();
+          res.add(Arrays.asList(tableMessage));
+          resp_showtb.setRowList(res);
+          return resp_showtb;
 
-      case DROP_TB:
-        System.out.println("[DEBUG] " + plan);
-        DropTablePlan dropTBPlan = (DropTablePlan) plan;
-        String tbName = dropTBPlan.getTableName();
-        manager.deleteTable(tbName);
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case DROP_TB:
+          System.out.println("[DEBUG] " + plan);
+          DropTablePlan dropTBPlan = (DropTablePlan) plan;
+          String tbName = dropTBPlan.getTableName();
+          manager.deleteTable(tbName);
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case INSERT:
-        System.out.println("[DEBUG] " + plan);
-        InsertPlan insertPlan = (InsertPlan) plan;
-        manager.insert(insertPlan.getCtx(), req.getSessionId());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case INSERT:
+          System.out.println("[DEBUG] " + plan);
+          InsertPlan insertPlan = (InsertPlan) plan;
+          manager.insert(insertPlan.getCtx(), req.getSessionId());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case DELETE:
-        System.out.println("[DEBUG] " + plan);
-        DeletePlan deletePlan = (DeletePlan) plan;
-        manager.delete(deletePlan.getCtx(), req.getSessionId());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
-      case SELECT:
-        System.out.println("[DEBUG] " + plan);
-        SelectPlan selectPlan = (SelectPlan) plan;
-        QueryResult queryResult = manager.select(selectPlan.getCtx(), req.getSessionId());
-        ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
-        for (Row row : queryResult.results) resp.addToRowList(row.toStringList());
-        if (queryResult.results.size() == 0) {
-          List<List<String>> empty_list = new ArrayList<>();
-          resp.setRowList(empty_list);
-        }
-        for (String columnName : queryResult.getColumnNames()) resp.addToColumnsList(columnName);
+        case DELETE:
+          System.out.println("[DEBUG] " + plan);
+          DeletePlan deletePlan = (DeletePlan) plan;
+          manager.delete(deletePlan.getCtx(), req.getSessionId());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
+        case SELECT:
+          System.out.println("[DEBUG] " + plan);
+          SelectPlan selectPlan = (SelectPlan) plan;
+          QueryResult queryResult = manager.select(selectPlan.getCtx(), req.getSessionId());
+          ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
+          for (Row row : queryResult.results) resp.addToRowList(row.toStringList());
+          if (queryResult.results.size() == 0) {
+            List<List<String>> empty_list = new ArrayList<>();
+            resp.setRowList(empty_list);
+          }
+          for (String columnName : queryResult.getColumnNames()) resp.addToColumnsList(columnName);
 
-        return resp;
+          return resp;
 
-      case UPDATE:
-        System.out.println("[DEBUG] " + plan);
-        UpdatePlan updatePlan = (UpdatePlan) plan;
-        manager.update(updatePlan.getCtx(), req.getSessionId());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case UPDATE:
+          System.out.println("[DEBUG] " + plan);
+          UpdatePlan updatePlan = (UpdatePlan) plan;
+          manager.update(updatePlan.getCtx(), req.getSessionId());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case BEGIN_TRANS:
-        System.out.println("[DEBUG] " + plan);
-        BeginTransactionPlan beginTransactionPlan = (BeginTransactionPlan) plan;
-        manager.beginTransaction(beginTransactionPlan.getCtx(), req.getSessionId());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
+        case BEGIN_TRANS:
+          System.out.println("[DEBUG] " + plan);
+          BeginTransactionPlan beginTransactionPlan = (BeginTransactionPlan) plan;
+          manager.beginTransaction(beginTransactionPlan.getCtx(), req.getSessionId());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
 
-      case COMMIT:
-        System.out.println("[DEBUG] " + plan);
-        CommitPlan commitPlan = (CommitPlan) plan;
-        manager.commit(commitPlan.getCtx(), req.getSessionId());
-        return new ExecuteStatementResp(StatusUtil.success(), false);
-      default:
+        case COMMIT:
+          System.out.println("[DEBUG] " + plan);
+          CommitPlan commitPlan = (CommitPlan) plan;
+          manager.commit(commitPlan.getCtx(), req.getSessionId());
+          return new ExecuteStatementResp(StatusUtil.success(), false);
+        case CHECKPOINT:
+          System.out.println("[DEBUG] " + plan);
+          manager.checkPoint();
+          return new ExecuteStatementResp(StatusUtil.success(), false);
+        default:
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+      return new ExecuteStatementResp(StatusUtil.fail(e.getMessage()), false);
     }
     return null;
   }

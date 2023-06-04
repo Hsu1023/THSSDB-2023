@@ -1,6 +1,7 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
+import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
@@ -47,13 +48,6 @@ public class Manager {
     this.recover();
   }
 
-  //  private Database GetCurrentDB() {
-  //    if(curDatabase == null) {
-  //      throw new DatabaseNotExistException();
-  //    }
-  //    return curDatabase;
-  //  }
-
   public void createDatabaseIfNotExists(String name) {
     // TODO
     Boolean change = false;
@@ -82,9 +76,18 @@ public class Manager {
       if (databases.containsKey(name)) {
         logger.dropDatabase(name);
         Database db = databases.get(name);
+        Table[] tables = db.tables.values().toArray(new Table[0]);
+        for (int i = 0; i < tables.length; i++) {
+          db.dropTable(tables[i].tableName);
+        }
+        File file = new File(Global.DATA_PATH + File.separator + name);
+        if (file.exists()) {
+          file.delete();
+        }
         databases.remove(name);
         change = true;
         System.out.println("[DEBUG] " + "delete db " + name);
+
       } else {
         System.out.println("[DEBUG] " + "non-existed db " + name);
         throw new DatabaseNotExistException();
@@ -138,6 +141,11 @@ public class Manager {
     //    } catch (Exception e) {
     //      e.printStackTrace();
     //    }
+  }
+
+  public void checkPoint() {
+    logger.checkPoint();
+    PageManager.checkPoint();
   }
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
@@ -242,7 +250,8 @@ public class Manager {
               if (primaryKeys.contains(columnItems.get(j).getName())) {
                 columnItems.get(j).setPrimary(1);
               }
-            };
+            }
+            ;
           }
           // foreign key constraint
           else if (tableConstraintContext.K_FOREIGN() != null) {
@@ -295,7 +304,7 @@ public class Manager {
   public Database getAndAssumeCurrentDatabase() {
     if (curDatabase == null) {
       System.out.println("[DEBUG] " + "current db is null");
-      throw new DatabaseNotExistException();
+      // throw new DatabaseNotExistException();
     }
     return curDatabase;
   }

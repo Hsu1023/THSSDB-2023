@@ -64,14 +64,6 @@ public class PageManager {
       new LinkedList<>(); // 储存bufferName和对应pool的index
   private static byte[][] bufferPool = new byte[Global.BUFFER_POOL_SIZE][Global.PAGE_SIZE];
 
-  private static byte[] getBuffer(int index) {
-    if (index >= 1 && index <= Global.BUFFER_POOL_SIZE) {
-      return bufferPool[index - 1];
-    } else {
-      throw new IllegalArgumentException("Invalid cache index");
-    }
-  }
-
   private static byte[] readBuffer(String databaseName, String tableName, int pageId) {
     String hashKey = databaseName + "@" + tableName + "@" + pageId;
     Boolean contains = bufferIndex.containsKey(hashKey);
@@ -154,6 +146,22 @@ public class PageManager {
         bufferIndex.put(hashKey, index);
         bufferPool[index] = buf;
         return bufferPool[index];
+      }
+    }
+  }
+
+  public static void checkPoint() {
+    // iter bufferIndex
+    for (Map.Entry<String, Integer> entry : bufferIndex.entrySet()) {
+      String hashKey = entry.getKey();
+      int index = entry.getValue();
+      String pathWrite = PathUtil.getBinFilePath(hashKey.split("@")[0], hashKey.split("@")[1]);
+      int pageIdWrite = Integer.parseInt(hashKey.split("@")[2]);
+      try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+        rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
+        rafWrite.write(bufferPool[index]);
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
   }

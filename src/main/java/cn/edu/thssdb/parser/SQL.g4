@@ -30,7 +30,11 @@ sqlStmt :
     | quitStmt
     | updateStmt
     | beginTransactionStmt
-    | commitStmt;
+    | commitStmt
+    | checkpointStmt;
+
+checkpointStmt :
+    K_CHECKPOINT ;
 
 createDbStmt :
     K_CREATE K_DATABASE databaseName ;
@@ -245,6 +249,7 @@ K_TRANSACTION: T R A N S A C T I O N;
 K_COMMIT: C O M M I T;
 K_FOREIGN: F O R E I G N;
 K_REFERENCES: R E F E R E N C E S;
+K_CHECKPOINT: C H E C K P O I N T;
 
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;
