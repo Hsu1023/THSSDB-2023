@@ -46,7 +46,7 @@ dropUserStmt :
 
 createTableStmt :
     K_CREATE K_TABLE tableName
-        '(' columnDef ( ',' columnDef )* ( ',' tableConstraint )? ')' ;
+        '(' columnDef ( ',' columnDef )* ( ',' tableConstraint )* ')' ;
 
 grantStmt :
     K_GRANT authLevel ( ',' authLevel )* K_ON tableName K_TO userName ;
@@ -134,8 +134,9 @@ expression :
     | expression ( ADD | SUB ) expression
     | '(' expression ')';
 
-tableConstraint :
-    K_PRIMARY K_KEY '(' columnName (',' columnName)* ')' ;
+tableConstraint
+    : K_PRIMARY K_KEY '(' columnName (',' columnName)* ')'
+    | K_FOREIGN K_KEY '(' columnName ')' K_REFERENCES tableName '(' columnName ')';
 
 resultColumn
     : '*'
@@ -168,6 +169,12 @@ userName :
 
 columnName :
     IDENTIFIER ;
+
+columnName0 :
+    columnName;
+
+columnName1 :
+    columnName;
 
 viewName :
     IDENTIFIER;
@@ -236,6 +243,8 @@ K_WHERE : W H E R E;
 K_BEGIN : B E G I N;
 K_TRANSACTION: T R A N S A C T I O N;
 K_COMMIT: C O M M I T;
+K_FOREIGN: F O R E I G N;
+K_REFERENCES: R E F E R E N C E S;
 
 IDENTIFIER :
     [a-zA-Z_] [a-zA-Z_0-9]* ;

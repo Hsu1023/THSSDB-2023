@@ -9,6 +9,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 public class Table implements Iterable<Row> {
   //  ReentrantReadWriteLock lock;
@@ -16,6 +17,7 @@ public class Table implements Iterable<Row> {
   public String tableName;
   public ArrayList<Column> columns;
   public BPlusTree<Entry, Row> index;
+  public List<ForeignKeyConstraint> foreignKeyConstraintList;
   private int primaryIndex;
   private String databaseFolderPath;
   private String tableFolderPath;
@@ -24,11 +26,17 @@ public class Table implements Iterable<Row> {
   public ArrayList<Long> s_lock_list = new ArrayList<Long>(); // 存储这个表的s锁被哪些session持有
   public ArrayList<Long> x_lock_list = new ArrayList<Long>(); // 存储这个表的x锁被哪些session持有
 
-  public Table(String databaseName, String tableName, Column[] columns, String databaseFolderPath) {
+  public Table(
+      String databaseName,
+      String tableName,
+      Column[] columns,
+      String databaseFolderPath,
+      List<ForeignKeyConstraint> foreignKeyConstraintList) {
     //    this.lock = new ReentrantReadWriteLock();
     this.databaseName = databaseName;
     this.tableName = tableName;
     this.columns = new ArrayList<>(Arrays.asList(columns));
+    this.foreignKeyConstraintList = foreignKeyConstraintList;
     this.primaryIndex = -1;
     this.databaseFolderPath = databaseFolderPath;
     this.tableFolderPath = databaseFolderPath + File.separator + tableName + File.separator;
@@ -177,6 +185,9 @@ public class Table implements Iterable<Row> {
               "(when check row valid in table)");
       }
     }
+
+    for (ForeignKeyConstraint foreignKeyConstraint : foreignKeyConstraintList)
+      if (!foreignKeyConstraint.check(this, row)) throw new ConstraintViolatedException();
   }
 
   private Boolean containsRow(Row row) {

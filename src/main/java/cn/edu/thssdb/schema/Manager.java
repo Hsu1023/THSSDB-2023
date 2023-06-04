@@ -10,6 +10,7 @@ import cn.edu.thssdb.utils.Logger;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Manager {
   private HashMap<String, Database> databases;
@@ -148,6 +149,7 @@ public class Manager {
       //    for (int i = 0; i < n; i += 1) {
       //      System.out.println(ctx.getChild(i));
       //    }
+      List<ForeignKeyConstraint> foreignKeyConstraintList = new ArrayList<>();
       for (int i = 4; i < n; i += 2) { // 对每个数据项的type进行分析
         // 如果是普通数据项
         if (ctx.getChild(i)
@@ -217,21 +219,12 @@ public class Manager {
             length = (type == ColumnType.INT || type == ColumnType.FLOAT) ? 2 : 4;
           columnItems.add(new Column(columnName, type, 0, notNull, length)); // 新增column Item
         }
-        // 如果是primary key约束项
-        else {
-          if (((SQLParser.TableConstraintContext) ctx.getChild(i))
-                  .children
-                  .get(0)
-                  .toString()
-                  .toLowerCase()
-                  .equals("primary")
-              && ((SQLParser.TableConstraintContext) ctx.getChild(i))
-                  .children
-                  .get(1)
-                  .toString()
-                  .toLowerCase()
-                  .equals("key")) {
-
+        // table constraint
+        else if (SQLParser.TableConstraintContext.class.isInstance(ctx.getChild(i))) {
+          SQLParser.TableConstraintContext tableConstraintContext =
+              (SQLParser.TableConstraintContext) ctx.getChild(i);
+          // primary key constraint
+          if (tableConstraintContext.K_PRIMARY() != null) {
             ArrayList<String> primaryKeys = new ArrayList<>();
             int primaryKeyNum = ctx.getChild(i).getChildCount();
             for (int j = 3; j < primaryKeyNum; j += 2) {
@@ -243,7 +236,6 @@ public class Manager {
                       .toString();
               primaryKeys.add(columnName);
             }
-            //              System.out.println(primaryKeys);
 
             int columnNum = columnItems.size();
             for (int j = 0; j < columnNum; j++) {
@@ -252,9 +244,49 @@ public class Manager {
               }
             }
           }
+          // foreign key constraint
+          else if (tableConstraintContext.K_FOREIGN() != null) {
+            String localColumnName =
+                tableConstraintContext.columnName(0).children.get(0).toString();
+            String foreignColumnName =
+                tableConstraintContext.columnName(1).children.get(0).toString();
+            String foreignTableName = tableConstraintContext.tableName().children.get(0).toString();
+
+            System.out.println("[DEBUG] " + localColumnName);
+            System.out.println("[DEBUG] " + foreignColumnName);
+            System.out.println("[DEBUG] " + foreignTableName);
+
+            if (!curDatabase.tables.containsKey(foreignTableName)) {
+              throw new TableNotExistException();
+            }
+            Table foreignTable = database.get(foreignTableName);
+            Column foreignTablePrimaryColumn =
+                foreignTable.columns.stream()
+                    .filter(column -> column.isPrimary())
+                    .collect(Collectors.toList())
+                    .get(0);
+
+            if (!Objects.equals(foreignTablePrimaryColumn.getColumnName(), foreignColumnName))
+              throw new NoPrimaryKeyException();
+
+            Column localColumn =
+                columnItems.stream()
+                    .filter(column -> Objects.equals(column.getColumnName(), localColumnName))
+                    .collect(Collectors.toList())
+                    .get(0);
+
+            foreignKeyConstraintList.add(
+                new ForeignKeyConstraint(foreignTable, localColumn, foreignTablePrimaryColumn));
+          } else {
+
+          }
+        }
+        // failed to parse item
+        else {
         }
       }
-      database.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
+      database.create(
+          tableName, columnItems.toArray(new Column[columnItems.size()]), foreignKeyConstraintList);
     } finally {
 
     }
@@ -329,6 +361,8 @@ public class Manager {
           String valueString = value.literalValue(i).getText();
           valueStringList.add(valueString);
         }
+        // only first row
+        break;
       }
 
       // get selected columns (match insert names of columns and table columns)
@@ -370,6 +404,34 @@ public class Manager {
       logger.insert(database.getName(), table.tableName, newRow);
       table.insert(newRow);
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+
+      // for multiple values
+      for (SQLParser.ValueEntryContext value : values.subList(1, values.size())) {
+        valueStringList = new ArrayList<>();
+        for (int i = 0; i < value.literalValue().size(); i++) {
+          String valueString = value.literalValue(i).getText();
+          valueStringList.add(valueString);
+        }
+        if (valueStringList.size() != selectedColumns.size()) {
+          throw new SchemaLengthMismatchException(
+              selectedColumns.size(),
+              valueStringList.size(),
+              "wrong insert operation (columns unmatched)!");
+        }
+
+        entries = new ArrayList<>();
+        for (Column column : allColumns) {
+          int id = selectedColumns.indexOf(column);
+          String valueString = "NULL";
+          if (id != -1) valueString = valueStringList.get(id);
+          Entry entry = column.parseEntry(valueString);
+          entries.add(entry);
+        }
+        newRow = new Row(entries);
+        table.insert(newRow);
+        System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+      }
+
       if (seperateLevel == "SERIALIZABLE") {
         // 判断是否默认commit
         if (!transaction_list.contains(
