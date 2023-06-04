@@ -1,7 +1,6 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
-//import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
