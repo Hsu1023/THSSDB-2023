@@ -6,7 +6,6 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
-import org.antlr.v4.runtime.RuleContext;
 
 import java.io.*;
 import java.util.*;
@@ -146,6 +145,7 @@ public class Manager {
       //    for (int i = 0; i < n; i += 1) {
       //      System.out.println(ctx.getChild(i));
       //    }
+      List<ForeignKeyConstraint> foreignKeyConstraintList = new ArrayList<>();
       for (int i = 4; i < n; i += 2) { // 对每个数据项的type进行分析
         // 如果是普通数据项
         if (ctx.getChild(i)
@@ -242,36 +242,37 @@ public class Manager {
           }
           // foreign key constraint
           else if (tableConstraintContext.K_FOREIGN() != null) {
-            List<String> localColumnList = tableConstraintContext.columnName0().stream()
-                    .map(RuleContext::toString)
-                    .collect(Collectors.toList());
-            List<String> foreignColumnList = tableConstraintContext.columnName1().stream()
-                    .map(RuleContext::toString)
-                    .collect(Collectors.toList());
-            if (localColumnList.size() != foreignColumnList.size())
-              throw new SchemaLengthMismatchException(
-                      foreignColumnList.size(),
-                      localColumnList.size(),
-                      "wrong create table: foreign key constraint length mismatch"
-              );
+            String localColumnName =
+                tableConstraintContext.columnName(0).children.get(0).toString();
+            String foreignColumnName =
+                tableConstraintContext.columnName(1).children.get(0).toString();
+            String foreignTableName = tableConstraintContext.tableName().children.get(0).toString();
 
-            String foreignTableName = tableConstraintContext.tableName().toString();
+            System.out.println("[DEBUG] " + localColumnName);
+            System.out.println("[DEBUG] " + foreignColumnName);
+            System.out.println("[DEBUG] " + foreignTableName);
+
             if (!curDatabase.tables.containsKey(foreignTableName)) {
               throw new TableNotExistException();
             }
             Table foreignTable = database.get(foreignTableName);
-            List<String> foreignTablePrimaryKeyList
-                    = foreignTable.columns.stream()
-                    .filter(Column::isPrimary)
-                    .map(Column::getColumnName)
-                    .collect(Collectors.toList());
+            Column foreignTablePrimaryColumn =
+                foreignTable.columns.stream()
+                    .filter(column -> column.isPrimary())
+                    .collect(Collectors.toList())
+                    .get(0);
 
-            if (!new HashSet<String>(foreignColumnList).equals(new HashSet<String>(foreignTablePrimaryKeyList)))
+            if (!Objects.equals(foreignTablePrimaryColumn.getColumnName(), foreignColumnName))
               throw new NoPrimaryKeyException();
 
+            Column localColumn =
+                columnItems.stream()
+                    .filter(column -> Objects.equals(column.getColumnName(), localColumnName))
+                    .collect(Collectors.toList())
+                    .get(0);
 
-
-
+            foreignKeyConstraintList.add(
+                new ForeignKeyConstraint(foreignTable, localColumn, foreignTablePrimaryColumn));
           } else {
 
           }
@@ -280,7 +281,8 @@ public class Manager {
         else {
         }
       }
-      database.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
+      database.create(
+          tableName, columnItems.toArray(new Column[columnItems.size()]), foreignKeyConstraintList);
     } finally {
 
     }

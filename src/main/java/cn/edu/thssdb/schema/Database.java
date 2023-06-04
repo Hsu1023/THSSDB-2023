@@ -10,6 +10,7 @@ import java.awt.*;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Database {
@@ -50,14 +51,16 @@ public class Database {
     }
   }
 
-  public void create(String name, Column[] columns) {
+  public void create(
+      String name, Column[] columns, List<ForeignKeyConstraint> foreignKeyConstraintList) {
     try {
       lock.writeLock().lock();
       if (this.tables.containsKey(name)) {
         System.out.println("[DEBUG] " + "duplicated tb " + name);
         throw new DuplicateTableException();
       }
-      Table table = new Table(this.name, name, columns, this.getTablesFolderPath());
+      Table table =
+          new Table(this.name, name, columns, this.getTablesFolderPath(), foreignKeyConstraintList);
       this.tables.put(name, table);
       this.persist();
     } finally {
@@ -128,7 +131,8 @@ public class Database {
                     name,
                     tableName,
                     columnList.toArray(new Column[columnList.size()]),
-                    getTablesFolderPath());
+                    getTablesFolderPath(),
+                    new ArrayList<>()); // TODO: recover foreign key constraint
             tables.put(tableName, table);
 
             System.out.println("[DEBUG] " + "recover " + tableName);

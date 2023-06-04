@@ -1,15 +1,20 @@
 package cn.edu.thssdb.schema;
 
-import java.util.List;
-
 public class ForeignKeyConstraint {
-    public Table foreignTable;
-    public List<String> localColumnList;
-    public List<String> foreignColumnList;
-    public ForeignKeyConstraint(Table foreignTable, List<String> localColumnList, List<String> foreignColumnList)
-    {
-        this.foreignTable = foreignTable;
-        this.localColumnList = localColumnList;
-        this.foreignColumnList = foreignColumnList;
-    }
+  Table foreignTable;
+  Column localColumn;
+  Column foreignTablePrimaryColumn;
+
+  public ForeignKeyConstraint(
+      Table foreignTable, Column localColumn, Column foreignTablePrimaryColumn) {
+    this.foreignTable = foreignTable;
+    this.localColumn = localColumn;
+    this.foreignTablePrimaryColumn = foreignTablePrimaryColumn;
+  }
+
+  boolean check(Table localTable, Row row) {
+    int localIndex = localTable.columns.indexOf(localColumn);
+    Entry value = row.getEntries().get(localIndex);
+    return foreignTable.index.contains(value);
+  }
 }

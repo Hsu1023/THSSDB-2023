@@ -136,7 +136,7 @@ expression :
 
 tableConstraint
     : K_PRIMARY K_KEY '(' columnName (',' columnName)* ')'
-    | K_FOREIGN K_KEY '(' columnName0 (',' columnName0)* ')' K_REFERENCES tableName '(' columnName1 (',' columnName1)* ')';
+    | K_FOREIGN K_KEY '(' columnName ')' K_REFERENCES tableName '(' columnName ')';
 
 resultColumn
     : '*'
