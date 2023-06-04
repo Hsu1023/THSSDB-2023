@@ -21,7 +21,7 @@ public class Manager {
   private static String MANAGER_DATAPATH = Global.DATA_PATH + File.separator + "manager.db";
   //  private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private String seperateLevel =
-      "READ_COMMITTED"; // could be changed into "READ_COMMITTED" or "SERIALIZABLE"
+      "SERIALIZABLE"; // could be changed into "READ_COMMITTED" or "SERIALIZABLE"
 
   public ArrayList<Long> transaction_list =
       new ArrayList<Long>(); // 事务列表，begin transaction开启，commit结束
@@ -319,7 +319,7 @@ public class Manager {
       }
       Table table = database.get(tableName);
 
-      if (seperateLevel == "SERIALIZABLE") {
+      if (seperateLevel.equals("SERIALIZABLE")) {
         // lock
         while (true) {
           if (!session_queue.contains(session)) { // 不在原来的阻塞队列里
@@ -441,7 +441,7 @@ public class Manager {
         System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       }
 
-      if (seperateLevel == "SERIALIZABLE") {
+      if (seperateLevel.equals("SERIALIZABLE")) {
         // 判断是否默认commit
         if (!transaction_list.contains(
             session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
@@ -472,7 +472,7 @@ public class Manager {
       }
       Table table = database.get(tableName);
 
-      if (seperateLevel == "SERIALIZABLE") {
+      if (seperateLevel.equals("SERIALIZABLE")) {
         // lock
         while (true) {
           if (!session_queue.contains(session)) { // 不在原来的阻塞队列里
@@ -564,7 +564,7 @@ public class Manager {
 
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
-      if (seperateLevel == "SERIALIZABLE") {
+      if (seperateLevel.equals("SERIALIZABLE")) {
         // 判断是否默认commit
         if (!transaction_list.contains(
             session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
@@ -864,13 +864,13 @@ public class Manager {
       }
       if (!isSelectAll) finalTable.filteredOnColumns(columnIndexs);
 
-      if (seperateLevel == "READ_COMMITTED") {
+      if (seperateLevel.equals("READ_COMMITTED")) {
         // free s lock
         for (String table_name : table_names) {
           Table the_table = curDatabase.get(table_name);
           the_table.free_s_lock(session);
         }
-      } else if (seperateLevel == "SERIALIZABLE") {
+      } else if (seperateLevel.equals("SERIALIZABLE")) {
         if (!transaction_list.contains(session)) { // 单句
           // free s lock
           for (String table_name : table_names) {
@@ -1012,7 +1012,7 @@ public class Manager {
         x_lock_dict.put(session, x_table_list);
 
         // if SERIALIZABLE free s lock
-        if (seperateLevel == "SERIALIZABLE") {
+        if (seperateLevel.equals("SERIALIZABLE")) {
           System.out.println("free s lock");
           ArrayList<String> s_table_list =
               s_lock_dict.get(session); // 虽然更新了Table里的s_lock_list，但是没更新manager里的s_lock_dict
