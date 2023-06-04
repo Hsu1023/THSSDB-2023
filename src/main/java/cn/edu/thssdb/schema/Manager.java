@@ -6,9 +6,11 @@ import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
+import org.antlr.v4.runtime.RuleContext;
 
 import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Manager {
   private HashMap<String, Database> databases;
@@ -214,21 +216,12 @@ public class Manager {
             length = (type == ColumnType.INT || type == ColumnType.FLOAT) ? 2 : 4;
           columnItems.add(new Column(columnName, type, 0, notNull, length)); // 新增column Item
         }
-        // 如果是primary key约束项
-        else {
-          if (((SQLParser.TableConstraintContext) ctx.getChild(i))
-                  .children
-                  .get(0)
-                  .toString()
-                  .toLowerCase()
-                  .equals("primary")
-              && ((SQLParser.TableConstraintContext) ctx.getChild(i))
-                  .children
-                  .get(1)
-                  .toString()
-                  .toLowerCase()
-                  .equals("key")) {
-
+        // table constraint
+        else if (SQLParser.TableConstraintContext.class.isInstance(ctx.getChild(i))) {
+          SQLParser.TableConstraintContext tableConstraintContext =
+              (SQLParser.TableConstraintContext) ctx.getChild(i);
+          // primary key constraint
+          if (tableConstraintContext.K_PRIMARY() != null) {
             ArrayList<String> primaryKeys = new ArrayList<>();
             int primaryKeyNum = ctx.getChild(i).getChildCount();
             for (int j = 3; j < primaryKeyNum; j += 2) {
@@ -241,7 +234,6 @@ public class Manager {
                       .toLowerCase(Locale.ROOT);
               primaryKeys.add(columnName);
             }
-            //              System.out.println(primaryKeys);
 
             int columnNum = columnItems.size();
             for (int j = 0; j < columnNum; j++) {
@@ -250,6 +242,44 @@ public class Manager {
               }
             }
           }
+          // foreign key constraint
+          else if (tableConstraintContext.K_FOREIGN() != null) {
+            List<String> localColumnList = tableConstraintContext.columnName0().stream()
+                    .map(RuleContext::toString)
+                    .collect(Collectors.toList());
+            List<String> foreignColumnList = tableConstraintContext.columnName1().stream()
+                    .map(RuleContext::toString)
+                    .collect(Collectors.toList());
+            if (localColumnList.size() != foreignColumnList.size())
+              throw new SchemaLengthMismatchException(
+                      foreignColumnList.size(),
+                      localColumnList.size(),
+                      "wrong create table: foreign key constraint length mismatch"
+              );
+
+            String foreignTableName = tableConstraintContext.tableName().toString();
+            if (!curDatabase.tables.containsKey(foreignTableName)) {
+              throw new TableNotExistException();
+            }
+            Table foreignTable = database.get(foreignTableName);
+            List<String> foreignTablePrimaryKeyList
+                    = foreignTable.columns.stream()
+                    .filter(Column::isPrimary)
+                    .map(Column::getColumnName)
+                    .collect(Collectors.toList());
+
+            if (!new HashSet<String>(foreignColumnList).equals(new HashSet<String>(foreignTablePrimaryKeyList)))
+              throw new NoPrimaryKeyException();
+
+
+
+
+          } else {
+
+          }
+        }
+        // failed to parse item
+        else {
         }
       }
       database.create(tableName, columnItems.toArray(new Column[columnItems.size()]));
