@@ -357,6 +357,8 @@ public class Manager {
           String valueString = value.literalValue(i).getText();
           valueStringList.add(valueString);
         }
+        // only first row
+        break;
       }
 
       // get selected columns (match insert names of columns and table columns)
@@ -397,6 +399,34 @@ public class Manager {
       Row newRow = new Row(entries);
       table.insert(newRow);
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+
+      // for multiple values
+      for (SQLParser.ValueEntryContext value : values.subList(1, values.size())) {
+        valueStringList = new ArrayList<>();
+        for (int i = 0; i < value.literalValue().size(); i++) {
+          String valueString = value.literalValue(i).getText();
+          valueStringList.add(valueString);
+        }
+        if (valueStringList.size() != selectedColumns.size()) {
+          throw new SchemaLengthMismatchException(
+              selectedColumns.size(),
+              valueStringList.size(),
+              "wrong insert operation (columns unmatched)!");
+        }
+
+        entries = new ArrayList<>();
+        for (Column column : allColumns) {
+          int id = selectedColumns.indexOf(column);
+          String valueString = "NULL";
+          if (id != -1) valueString = valueStringList.get(id);
+          Entry entry = column.parseEntry(valueString);
+          entries.add(entry);
+        }
+        newRow = new Row(entries);
+        table.insert(newRow);
+        System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+      }
+
       if (seperateLevel == "SERIALIZABLE") {
         // 判断是否默认commit
         if (!transaction_list.contains(
