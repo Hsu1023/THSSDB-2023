@@ -152,9 +152,6 @@ public class Manager {
     try {
       Database database = getAndAssumeCurrentDatabase();
       String tableName = ctx.tableName().children.get(0).toString(); // create table tableName
-      if(database.tables.containsKey(tableName)){
-        throw new DuplicateTableException();
-      }
       int n = ctx.getChildCount();
       ArrayList<Column> columnItems = new ArrayList<>();
       //    for (int i = 0; i < n; i += 1) {
