@@ -323,7 +323,6 @@ public class Manager {
       }
       Table table = database.get(tableName);
 
-
       if (seperateLevel.equals("SERIALIZABLE")) {
         // lock
         while (true) {
@@ -448,14 +447,12 @@ public class Manager {
         System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       }
 
-
-
     } finally {
       synchronized (meta_lock) {
         if (seperateLevel.equals("SERIALIZABLE")) {
           // 判断是否默认commit
           if (!transaction_list.contains(
-                  session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+              session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
             // 释放锁
             Database the_database = curDatabase;
             ArrayList<String> table_list = x_lock_dict.get(session);
@@ -575,14 +572,12 @@ public class Manager {
 
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
-
-
     } finally {
       synchronized (meta_lock) {
         if (seperateLevel.equals("SERIALIZABLE")) {
           // 判断是否默认commit
           if (!transaction_list.contains(
-                  session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+              session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
             // 释放锁
             Database the_database = curDatabase;
             ArrayList<String> table_list = x_lock_dict.get(session);
@@ -716,7 +711,7 @@ public class Manager {
     } finally {
       synchronized (meta_lock) {
         if (!transaction_list.contains(
-                session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+            session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
           // 释放锁
           Database the_database = curDatabase;
           ArrayList<String> table_list = x_lock_dict.get(session);
@@ -852,7 +847,7 @@ public class Manager {
                   Table the_table = curDatabase.get(table_name);
                   the_table.free_s_lock(session);
                 }
-//                throw new RuntimeException("Read uncommitted data!");
+                //                throw new RuntimeException("Read uncommitted data!");
               }
             }
           }
@@ -907,7 +902,7 @@ public class Manager {
           }
         } else if (seperateLevel.equals("SERIALIZABLE")) {
           if (!transaction_list.contains(
-                  session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+              session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
             System.out.println("Release Select S locks");
             // 释放锁
             Database the_database = curDatabase;
@@ -1059,7 +1054,7 @@ public class Manager {
           if (seperateLevel.equals("SERIALIZABLE")) {
             System.out.println("commit: free s lock");
             ArrayList<String> s_table_list =
-                    s_lock_dict.get(session); // 虽然更新了Table里的s_lock_list，但是没更新manager里的s_lock_dict
+                s_lock_dict.get(session); // 虽然更新了Table里的s_lock_list，但是没更新manager里的s_lock_dict
             System.out.println(s_table_list);
             for (String table_name : s_table_list) {
               Table the_table = the_database.get(table_name);
