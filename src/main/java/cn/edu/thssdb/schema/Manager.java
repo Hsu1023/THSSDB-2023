@@ -442,10 +442,13 @@ public class Manager {
         System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       }
 
+
+
+    } finally {
       if (seperateLevel.equals("SERIALIZABLE")) {
         // 判断是否默认commit
         if (!transaction_list.contains(
-            session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+                session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
           // 释放锁
           Database the_database = curDatabase;
           ArrayList<String> table_list = x_lock_dict.get(session);
@@ -457,9 +460,6 @@ public class Manager {
           x_lock_dict.put(session, table_list);
         }
       }
-
-    } finally {
-
     }
   }
 
@@ -565,10 +565,13 @@ public class Manager {
 
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
+
+
+    } finally {
       if (seperateLevel.equals("SERIALIZABLE")) {
         // 判断是否默认commit
         if (!transaction_list.contains(
-            session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+                session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
           // 释放锁
           Database the_database = curDatabase;
           ArrayList<String> table_list = x_lock_dict.get(session);
@@ -580,9 +583,6 @@ public class Manager {
           x_lock_dict.put(session, table_list);
         }
       }
-
-    } finally {
-
     }
   }
 
@@ -698,8 +698,10 @@ public class Manager {
       }
       System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       // 判断是否默认commit
+
+    } finally {
       if (!transaction_list.contains(
-          session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
+              session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
         // 释放锁
         Database the_database = curDatabase;
         ArrayList<String> table_list = x_lock_dict.get(session);
@@ -710,7 +712,6 @@ public class Manager {
         table_list.clear();
         x_lock_dict.put(session, table_list);
       }
-    } finally {
     }
   }
 
@@ -765,9 +766,9 @@ public class Manager {
   }
 
   public QueryResult select(SQLParser.SelectStmtContext ctx, long session) {
+    ArrayList<String> table_names = new ArrayList<>();
     try {
       // 获取select语句包括的table names
-      ArrayList<String> table_names = new ArrayList<>();
       for (SQLParser.TableNameContext subCtx : ctx.tableQuery(0).tableName()) {
         System.out.println("table name: " + subCtx.getText());
         table_names.add(subCtx.getText());
@@ -882,6 +883,21 @@ public class Manager {
       }
       return finalTable.toQueryResult();
     } finally {
+      if (seperateLevel.equals("READ_COMMITTED")) {
+        // free s lock
+        for (String table_name : table_names) {
+          Table the_table = curDatabase.get(table_name);
+          the_table.free_s_lock(session);
+        }
+      } else if (seperateLevel.equals("SERIALIZABLE")) {
+        if (!transaction_list.contains(session)) { // 单句
+          // free s lock
+          for (String table_name : table_names) {
+            Table the_table = curDatabase.get(table_name);
+            the_table.free_s_lock(session);
+          }
+        }
+      }
     }
   }
 
