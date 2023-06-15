@@ -1,7 +1,6 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
-import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
@@ -12,6 +11,8 @@ import cn.edu.thssdb.utils.Logger;
 import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
+
+// import cn.edu.thssdb.index.PageManager;
 
 public class Manager {
   private HashMap<String, Database> databases;
@@ -145,7 +146,7 @@ public class Manager {
 
   public void checkPoint() {
     logger.checkPoint();
-    PageManager.checkPoint();
+    //    PageManager.checkPoint();
   }
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
@@ -975,7 +976,7 @@ public class Manager {
   /*
   开始transaction
   */
-  public void beginTransaction(SQLParser.BeginTransactionStmtContext ctx, long session) {
+  public void beginTransaction(long session) {
     try {
       // 如果是新开启的一个事务，要新创建s,x锁记录表
       if (transaction_list == null || !transaction_list.contains(session)) {
@@ -997,7 +998,7 @@ public class Manager {
   /*
   commit
    */
-  public void commit(SQLParser.CommitStmtContext ctx, long session) {
+  public void commit(long session) {
     try {
       if (transaction_list.contains(session)) {
         Database the_database = curDatabase;

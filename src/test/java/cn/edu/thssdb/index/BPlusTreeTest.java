@@ -49,8 +49,9 @@ public class BPlusTreeTest {
     columns[0] = new Column("", ColumnType.INT, 0, true, 2);
 
     //    String filename = "./data" + ".bin";
-    tree = new BPlusTree<>("..", ".", columns, 0, false);
+    //    tree = new BPlusTree<>("..", ".", columns, 0, false);
 
+    tree = new BPlusTree<>();
     for (int i = 0; i < size; i++) {
       double random = Math.random();
       set.add((int) (random * size));

@@ -26,6 +26,9 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static cn.edu.thssdb.plan.LogicalPlan.LogicalPlanType.*;
+import static cn.edu.thssdb.plan.LogicalPlan.LogicalPlanType.UPDATE;
+
 public class IServiceHandler implements IService.Iface {
 
   private static final AtomicInteger sessionCnt = new AtomicInteger(0);
@@ -60,7 +63,16 @@ public class IServiceHandler implements IService.Iface {
     //    System.out.println(req.statement);
     LogicalPlan plan = LogicalGenerator.generate(req.statement);
     Manager manager = Manager.getInstance();
+
     try {
+
+      LogicalPlan.LogicalPlanType type = plan.getType();
+      Boolean autocommit = false;
+      if (type == SELECT || type == DELETE || type == INSERT || type == UPDATE) {
+        if (!manager.transaction_list.contains(req.sessionId)) {
+          autocommit = true;
+        }
+      }
       switch (plan.getType()) {
         case CREATE_DB:
           System.out.println("[DEBUG] " + plan);
@@ -117,17 +129,32 @@ public class IServiceHandler implements IService.Iface {
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case INSERT:
+          if (autocommit) {
+            manager.beginTransaction(req.sessionId);
+          }
           System.out.println("[DEBUG] " + plan);
           InsertPlan insertPlan = (InsertPlan) plan;
           manager.insert(insertPlan.getCtx(), req.getSessionId());
+          if (autocommit) {
+            manager.commit(req.sessionId);
+          }
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case DELETE:
+          if (autocommit) {
+            manager.beginTransaction(req.sessionId);
+          }
           System.out.println("[DEBUG] " + plan);
           DeletePlan deletePlan = (DeletePlan) plan;
           manager.delete(deletePlan.getCtx(), req.getSessionId());
+          if (autocommit) {
+            manager.commit(req.sessionId);
+          }
           return new ExecuteStatementResp(StatusUtil.success(), false);
         case SELECT:
+          if (autocommit) {
+            manager.beginTransaction(req.sessionId);
+          }
           System.out.println("[DEBUG] " + plan);
           SelectPlan selectPlan = (SelectPlan) plan;
           QueryResult queryResult = manager.select(selectPlan.getCtx(), req.getSessionId());
@@ -138,25 +165,34 @@ public class IServiceHandler implements IService.Iface {
             resp.setRowList(empty_list);
           }
           for (String columnName : queryResult.getColumnNames()) resp.addToColumnsList(columnName);
+          if (autocommit) {
+            manager.commit(req.sessionId);
+          }
 
           return resp;
 
         case UPDATE:
+          if (autocommit) {
+            manager.beginTransaction(req.sessionId);
+          }
           System.out.println("[DEBUG] " + plan);
           UpdatePlan updatePlan = (UpdatePlan) plan;
           manager.update(updatePlan.getCtx(), req.getSessionId());
+          if (autocommit) {
+            manager.commit(req.sessionId);
+          }
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case BEGIN_TRANS:
           System.out.println("[DEBUG] " + plan);
           BeginTransactionPlan beginTransactionPlan = (BeginTransactionPlan) plan;
-          manager.beginTransaction(beginTransactionPlan.getCtx(), req.getSessionId());
+          manager.beginTransaction(req.getSessionId());
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case COMMIT:
           System.out.println("[DEBUG] " + plan);
           CommitPlan commitPlan = (CommitPlan) plan;
-          manager.commit(commitPlan.getCtx(), req.getSessionId());
+          manager.commit(req.getSessionId());
           return new ExecuteStatementResp(StatusUtil.success(), false);
         case CHECKPOINT:
           System.out.println("[DEBUG] " + plan);
