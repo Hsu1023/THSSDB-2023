@@ -27,9 +27,6 @@ public class PageManager {
 
   ArrayList<Integer> vacantPage;
 
-
-
-
   public int rootPageId;
 
   public PageManager(String databaseName, String tableName, Column[] columns, int primaryIndex) {
@@ -76,11 +73,11 @@ public class PageManager {
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
         int index = bufferIndex.get(hashKey);
-//        bufferLinkedList.indexOf(hashKey);
+        //        bufferLinkedList.indexOf(hashKey);
         bufferLinkedList.remove(hashKey);
         bufferLinkedList.addFirst(hashKey);
-        if (index >= Global.BUFFER_POOL_SIZE){
-            System.out.println("index out of bound");
+        if (index >= Global.BUFFER_POOL_SIZE) {
+          System.out.println("index out of bound");
         }
         return bufferPool[index];
       } else {
@@ -89,10 +86,10 @@ public class PageManager {
           String lastHashKey = bufferLinkedList.removeLast();
           int index = bufferIndex.get(lastHashKey);
           String pathWrite =
-                  PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
+              PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
           int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
           try (RandomAccessFile rafRead = new RandomAccessFile(new File(pathRead), "r");
-               RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+              RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
             rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
             rafWrite.write(bufferPool[index]);
             rafRead.seek(pageId * Global.PAGE_SIZE);
@@ -100,7 +97,7 @@ public class PageManager {
             bufferLinkedList.addFirst(hashKey);
             bufferIndex.remove(lastHashKey);
             bufferIndex.put(hashKey, index);
-            if(bufferLinkedList.size()>Global.BUFFER_POOL_SIZE)
+            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
               System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
             return bufferPool[index];
           } catch (Exception e) {
@@ -114,7 +111,7 @@ public class PageManager {
             int index = bufferLinkedList.size() - 1;
             bufferIndex.put(hashKey, index);
             raf.read(bufferPool[index]);
-            if(bufferLinkedList.size()>Global.BUFFER_POOL_SIZE)
+            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
               System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
             return bufferPool[index];
@@ -128,7 +125,7 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -139,7 +136,7 @@ public class PageManager {
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
         int index = bufferIndex.get(hashKey);
-//        bufferLinkedList.indexOf(hashKey);
+        //        bufferLinkedList.indexOf(hashKey);
         bufferLinkedList.remove(hashKey);
         bufferLinkedList.addFirst(hashKey);
         bufferPool[index] = buf;
@@ -149,7 +146,7 @@ public class PageManager {
           String lastHashKey = bufferLinkedList.removeLast();
           int index = bufferIndex.get(lastHashKey);
           String pathWrite =
-                  PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
+              PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
           int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
           try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
             rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
@@ -158,7 +155,7 @@ public class PageManager {
             bufferLinkedList.addFirst(hashKey);
             bufferIndex.put(hashKey, index);
             bufferIndex.remove(lastHashKey);
-            if(bufferLinkedList.size()>Global.BUFFER_POOL_SIZE)
+            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
               System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
             return bufferPool[index];
@@ -171,7 +168,7 @@ public class PageManager {
           int index = bufferLinkedList.size() - 1;
           bufferIndex.put(hashKey, index);
           bufferPool[index] = buf;
-          if(bufferLinkedList.size()>Global.BUFFER_POOL_SIZE)
+          if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
             System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
           return bufferPool[index];
@@ -181,7 +178,7 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -221,7 +218,7 @@ public class PageManager {
         return ret;
       }
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -400,28 +397,30 @@ public class PageManager {
   void writeKey(ByteBufferWriter writer, Column column, Entry e) throws IOException {
     ColumnType type = column.getColumnType();
     Comparable value;
-    if (e.value == null)
-    {
-      value = (type == ColumnType.INT ? Integer.MIN_VALUE : type == ColumnType.FLOAT
-          ? Float.MIN_VALUE : type == ColumnType.LONG ? Long.MIN_VALUE : type == ColumnType.DOUBLE
-              ? Double.MIN_VALUE : "");
+    if (e.value == null) {
+      value =
+          (type == ColumnType.INT
+              ? Integer.MIN_VALUE
+              : type == ColumnType.FLOAT
+                  ? Float.MIN_VALUE
+                  : type == ColumnType.LONG
+                      ? Long.MIN_VALUE
+                      : type == ColumnType.DOUBLE ? Double.MIN_VALUE : "");
       writer.writeChar('N');
-    }
-    else {
+    } else {
       value = e.value;
       writer.writeChar('V');
     }
-      if (type == ColumnType.INT) writer.writeInt((int) value);
-      else if (type == ColumnType.FLOAT) writer.writeFloat((float) value);
-      else if (type == ColumnType.LONG) writer.writeLong((long) value);
-      else if (type == ColumnType.DOUBLE) writer.writeDouble((double) value);
-      else {
-        String s_value = (String) value;
-        writer.writeChars(s_value);
-        for (int i = 0; i < column.getMaxLength() - s_value.length(); i++)
-          writer.writeChar(0); // padding to the max length
-      }
-
+    if (type == ColumnType.INT) writer.writeInt((int) value);
+    else if (type == ColumnType.FLOAT) writer.writeFloat((float) value);
+    else if (type == ColumnType.LONG) writer.writeLong((long) value);
+    else if (type == ColumnType.DOUBLE) writer.writeDouble((double) value);
+    else {
+      String s_value = (String) value;
+      writer.writeChars(s_value);
+      for (int i = 0; i < column.getMaxLength() - s_value.length(); i++)
+        writer.writeChar(0); // padding to the max length
+    }
   }
 
   void writeValue(ByteBufferWriter writer, Column[] columns, Row r) throws IOException {
@@ -444,36 +443,35 @@ public class PageManager {
     char flag = reader.readChar();
     if (flag == 'N') {
       if (type == ColumnType.INT) reader.seek(Integer.BYTES);
-      else if (type == ColumnType.FLOAT) reader.seek( Float.BYTES);
+      else if (type == ColumnType.FLOAT) reader.seek(Float.BYTES);
       else if (type == ColumnType.LONG) reader.seek(Long.BYTES);
       else if (type == ColumnType.DOUBLE) reader.seek(Double.BYTES);
       else reader.seek(column.getMaxLength() * Character.BYTES);
 
       return new Entry(null);
-    }
-    else if (flag != 'V') {
+    } else if (flag != 'V') {
       throw new RuntimeException();
     }
 
-if (type == ColumnType.FLOAT){
-        System.out.println("here");
-}
-      if (type == ColumnType.INT) value = reader.readInt();
-      else if (type == ColumnType.FLOAT) value = reader.readFloat();
-      else if (type == ColumnType.LONG) value = reader.readLong();
-      else if (type == ColumnType.DOUBLE) value = reader.readDouble();
-      else {
-        String str = "";
-        for (int i = 1; i <= column.getMaxLength(); i++) {
-          char x = reader.readChar();
-          if (x == 0) {
-            reader.seek((column.getMaxLength() - i) * Character.BYTES);
-            break;
-          }
-          str += x;
+    if (type == ColumnType.FLOAT) {
+      System.out.println("here");
+    }
+    if (type == ColumnType.INT) value = reader.readInt();
+    else if (type == ColumnType.FLOAT) value = reader.readFloat();
+    else if (type == ColumnType.LONG) value = reader.readLong();
+    else if (type == ColumnType.DOUBLE) value = reader.readDouble();
+    else {
+      String str = "";
+      for (int i = 1; i <= column.getMaxLength(); i++) {
+        char x = reader.readChar();
+        if (x == 0) {
+          reader.seek((column.getMaxLength() - i) * Character.BYTES);
+          break;
         }
-        value = str;
+        str += x;
       }
+      value = str;
+    }
 
     return new Entry(value);
   }
