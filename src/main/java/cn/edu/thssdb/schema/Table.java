@@ -60,8 +60,8 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    //    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
-    this.index = new BPlusTree<>();
+        this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
+//    this.index = new BPlusTree<>();
     // TODO initiate lock status.
     //    recover();
   }
@@ -105,7 +105,7 @@ public class Table implements Iterable<Row> {
 
   public void insert(String row) {
     try {
-      String[] info = row.split(",");
+      String[] info = row.split(", ");
       ArrayList<Entry> entries = new ArrayList<>();
       int i = 0;
       for (Column c : columns) {
@@ -120,7 +120,7 @@ public class Table implements Iterable<Row> {
 
   public void delete(String row) {
     ColumnType c = columns.get(primaryIndex).getColumnType();
-    String[] info = row.split(",");
+    String[] info = row.split(", ");
     Entry primaryEntry = new Entry(ColumnType.getColumnTypeValue(c, info[primaryIndex]));
     index.remove(primaryEntry);
   }

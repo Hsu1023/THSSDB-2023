@@ -46,12 +46,11 @@ public class BPlusTreeTest {
     HashSet<Integer> set = new HashSet<>();
     int size = 100000;
     Column[] columns = new Column[1];
-    columns[0] = new Column("", ColumnType.INT, 0, true, 2);
+    columns[0] = new Column("", ColumnType.INT, 1, true, 2);
 
-    //    String filename = "./data" + ".bin";
-    //    tree = new BPlusTree<>("..", ".", columns, 0, false);
+    tree = new BPlusTree<>("..", ".", columns, 0, false);
 
-    tree = new BPlusTree<>();
+//    tree = new BPlusTree<>();
     for (int i = 0; i < size; i++) {
       double random = Math.random();
       set.add((int) (random * size));

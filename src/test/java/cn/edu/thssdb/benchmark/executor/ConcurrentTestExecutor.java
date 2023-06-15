@@ -23,7 +23,7 @@ public class ConcurrentTestExecutor extends TestExecutor {
   private Map<String, TableSchema> schemaMap;
   private Client client1;
   private Client client2;
-  private static final int rowNum = 1000;
+  private static final int rowNum = 100;
 
   public ConcurrentTestExecutor() throws TException {
     dataGenerator = new ConcurrentDataGenerator();

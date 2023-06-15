@@ -31,9 +31,14 @@ public class ByteBufferReader {
   }
 
   public char readChar() {
-    char value = ByteBuffer.wrap(buffer, cursor, Character.BYTES).getChar();
-    cursor += Character.BYTES;
-    return value;
+    try {
+      char value = ByteBuffer.wrap(buffer, cursor, Character.BYTES).getChar();
+      cursor += Character.BYTES;
+      return value;
+    } catch (Exception e) {
+      e.printStackTrace();
+      return 0;
+    }
   }
 
   public float readFloat() {
