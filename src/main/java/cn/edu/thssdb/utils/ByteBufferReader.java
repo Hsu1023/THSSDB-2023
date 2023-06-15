@@ -42,7 +42,7 @@ public class ByteBufferReader {
   }
 
   public float readFloat() {
-    float value = ByteBuffer.wrap(buffer, cursor, Float.BYTES).getChar();
+    float value = ByteBuffer.wrap(buffer, cursor, Float.BYTES).getFloat();
     cursor += Float.BYTES;
     return value;
   }

@@ -455,7 +455,9 @@ public class PageManager {
       throw new RuntimeException();
     }
 
-
+if (type == ColumnType.FLOAT){
+        System.out.println("here");
+}
       if (type == ColumnType.INT) value = reader.readInt();
       else if (type == ColumnType.FLOAT) value = reader.readFloat();
       else if (type == ColumnType.LONG) value = reader.readLong();
