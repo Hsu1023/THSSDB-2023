@@ -78,19 +78,19 @@ public class Table implements Iterable<Row> {
 
   public void insert(Row row) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       this.checkRowValidInTable(row);
       if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
 
     } finally {
-//      this.lock.writeLock().unlock();
+      //      this.lock.writeLock().unlock();
     }
   }
 
   public void insert(String row) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       String[] info = row.split(", ");
       ArrayList<Entry> entries = new ArrayList<>();
       int i = 0;
@@ -102,13 +102,13 @@ public class Table implements Iterable<Row> {
     } catch (Exception e) {
       throw e;
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   public void delete(String row) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       ColumnType c = columns.get(primaryIndex).getColumnType();
       String[] info = row.split(", ");
       Entry primaryEntry = new Entry(ColumnType.getColumnTypeValue(c, info[primaryIndex]));
@@ -116,28 +116,28 @@ public class Table implements Iterable<Row> {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   public Boolean contains(Row row) {
     try {
-//      lock.readLock().lock();
+      //      lock.readLock().lock();
       return index.contains(row.getEntries().get(primaryIndex));
     } finally {
-//      lock.readLock().unlock();
+      //      lock.readLock().unlock();
     }
   }
 
   public void delete(Row row) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       //      if (!this.contains(row)) {
       //        throw new RowNotExistException();
       //      }
       index.remove(row.getEntries().get(primaryIndex));
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
@@ -147,7 +147,7 @@ public class Table implements Iterable<Row> {
 
   public void update(Row oldRow, Row newRow) {
     try {
-//      this.lock.writeLock().lock();
+      //      this.lock.writeLock().lock();
       checkRowValidInTable(newRow);
       Entry oldKeyEntry = oldRow.getEntries().get(primaryIndex);
       Entry newKeyEntry = newRow.getEntries().get(primaryIndex);
@@ -158,7 +158,7 @@ public class Table implements Iterable<Row> {
       index.put(newKeyEntry, newRow);
 
     } finally {
-//      this.lock.writeLock().unlock();
+      //      this.lock.writeLock().unlock();
     }
   }
 
@@ -191,10 +191,10 @@ public class Table implements Iterable<Row> {
 
   private Boolean containsRow(Row row) {
     try {
-//      this.lock.readLock().lock();
+      //      this.lock.readLock().lock();
       return this.index.contains(row.getEntries().get(this.primaryIndex));
     } finally {
-//      this.lock.readLock().unlock();
+      //      this.lock.readLock().unlock();
     }
   }
 
