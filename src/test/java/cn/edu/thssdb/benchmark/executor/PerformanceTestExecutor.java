@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CompletableFuture;
 
+import static java.lang.Thread.sleep;
+
 public class PerformanceTestExecutor extends TestExecutor {
   private static final Logger LOGGER = LoggerFactory.getLogger(PerformanceTestExecutor.class);
   private static final int DATA_SEED = PerformanceTestConfig.DATA_SEED;

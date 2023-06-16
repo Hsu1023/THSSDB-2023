@@ -78,7 +78,7 @@ public class PageManager {
 
   public static void deleteDBBuffer(String databaseName) {
     try {
-      //      lock.writeLock().lock();
+            lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName)) {
@@ -92,13 +92,13 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-      //      lock.writeLock().unlock();
+            lock.writeLock().unlock();
     }
   }
 
   public static void deleteTableBuffer(String databaseName, String tableName) {
     try {
-      //      lock.writeLock().lock();
+            lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName) && key.split("@")[1].equals(tableName)) {
@@ -112,13 +112,13 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-      //      lock.writeLock().unlock();
+            lock.writeLock().unlock();
     }
   }
 
   private static byte[] readBuffer(String databaseName, String tableName, int pageId) {
     try {
-      //      lock.writeLock().lock();
+      lock.writeLock().lock();
       String hashKey = databaseName + "@" + tableName + "@" + pageId;
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
@@ -135,24 +135,23 @@ public class PageManager {
         if (bufferLinkedList.size() == Global.BUFFER_POOL_SIZE) {
           String lastHashKey = bufferLinkedList.removeLast();
           int index = bufferIndex.get(lastHashKey);
+          bufferLinkedList.addFirst(hashKey);
+          bufferIndex.remove(lastHashKey);
+          bufferIndex.put(hashKey, index);
           String pathWrite =
               PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
           int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
+          lock.writeLock().unlock();
           try (RandomAccessFile rafRead = new RandomAccessFile(new File(pathRead), "r");
               RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+
             rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
             rafWrite.write(bufferPool[index]);
             rafRead.seek(pageId * Global.PAGE_SIZE);
             rafRead.read(bufferPool[index]);
-            bufferLinkedList.addFirst(hashKey);
-            bufferIndex.remove(lastHashKey);
-            bufferIndex.put(hashKey, index);
             //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
             //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
             return bufferPool[index];
-          } catch (Exception e) {
-            e.printStackTrace();
-            return null;
           }
         } else {
           try (RandomAccessFile raf = new RandomAccessFile(new File(pathRead), "r")) {
@@ -161,17 +160,15 @@ public class PageManager {
             assert emptyBufferIndex.size() > 0;
             index = emptyBufferIndex.removeFirst();
             if (index == -1) throw new RuntimeException();
-            raf.seek(pageId * Global.PAGE_SIZE);
             bufferLinkedList.addFirst(hashKey);
             bufferIndex.put(hashKey, index);
+            lock.writeLock().unlock();
+            raf.seek(pageId * Global.PAGE_SIZE);
             raf.read(bufferPool[index]);
             //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
             //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
             return bufferPool[index];
-          } catch (Exception e) {
-            e.printStackTrace();
-            return null;
           }
         }
       }
@@ -179,13 +176,14 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-      //      lock.writeLock().unlock();
+      if (lock.writeLock().isHeldByCurrentThread())
+        lock.writeLock().unlock();
     }
   }
 
   private static byte[] writeBuffer(String databaseName, String tableName, int pageId, byte[] buf) {
     try {
-      //      lock.writeLock().lock();
+      lock.writeLock().lock();
       String hashKey = databaseName + "@" + tableName + "@" + pageId;
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
@@ -199,16 +197,17 @@ public class PageManager {
         if (bufferLinkedList.size() == Global.BUFFER_POOL_SIZE) {
           String lastHashKey = bufferLinkedList.removeLast();
           int index = bufferIndex.get(lastHashKey);
+          bufferPool[index] = buf;
+          bufferLinkedList.addFirst(hashKey);
+          bufferIndex.put(hashKey, index);
+          bufferIndex.remove(lastHashKey);
+          lock.writeLock().unlock();
           String pathWrite =
               PathUtil.getBinFilePath(lastHashKey.split("@")[0], lastHashKey.split("@")[1]);
           int pageIdWrite = Integer.parseInt(lastHashKey.split("@")[2]);
           try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
             rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
             rafWrite.write(bufferPool[index]);
-            bufferPool[index] = buf;
-            bufferLinkedList.addFirst(hashKey);
-            bufferIndex.put(hashKey, index);
-            bufferIndex.remove(lastHashKey);
             //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
             //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
@@ -235,23 +234,29 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-      //      lock.writeLock().unlock();
+      if (lock.writeLock().isHeldByCurrentThread())
+            lock.writeLock().unlock();
     }
   }
 
   public static void checkPoint() {
     // iter bufferIndex
-    for (Map.Entry<String, Integer> entry : bufferIndex.entrySet()) {
-      String hashKey = entry.getKey();
-      int index = entry.getValue();
-      String pathWrite = PathUtil.getBinFilePath(hashKey.split("@")[0], hashKey.split("@")[1]);
-      int pageIdWrite = Integer.parseInt(hashKey.split("@")[2]);
-      try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
-        rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
-        rafWrite.write(bufferPool[index]);
-      } catch (Exception e) {
-        e.printStackTrace();
+    try {
+      lock.writeLock().lock();
+      for (Map.Entry<String, Integer> entry : bufferIndex.entrySet()) {
+        String hashKey = entry.getKey();
+        int index = entry.getValue();
+        String pathWrite = PathUtil.getBinFilePath(hashKey.split("@")[0], hashKey.split("@")[1]);
+        int pageIdWrite = Integer.parseInt(hashKey.split("@")[2]);
+        try (RandomAccessFile rafWrite = new RandomAccessFile(new File(pathWrite), "rw")) {
+          rafWrite.seek(pageIdWrite * Global.PAGE_SIZE);
+          rafWrite.write(bufferPool[index]);
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
       }
+    } finally {
+      lock.writeLock().unlock();
     }
   }
 

@@ -566,6 +566,7 @@ public class Manager {
               || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
               || (comparator.GT() != null && curEntry.compareTo(comparedEntry) > 0)
               || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
+//            logger.session("SESSION:" + session + " DELETE " + database.getName() + " " + tableName + " " + curRow.toString());
             logger.delete(database.getName(), table.tableName, curRow);
             table.delete(curRow);
           }
@@ -604,15 +605,6 @@ public class Manager {
         throw new TableNotExistException();
       }
       Table table = database.get(tableName);
-      ArrayList<Column> columns = table.columns;
-
-      Iterator<Row> rowIterator = table.iterator();
-
-      String columnName = ctx.columnName().getText();
-      int updateIndex = table.getColumnIndexByName(columnName);
-      Column selectedColumn = columns.get(updateIndex);
-      Entry attrValue =
-          selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
       // lock
       while (true) {
         synchronized (meta_lock) {
@@ -657,6 +649,16 @@ public class Manager {
           }
         }
       }
+
+      ArrayList<Column> columns = table.columns;
+
+      Iterator<Row> rowIterator = table.iterator();
+
+      String columnName = ctx.columnName().getText();
+      int updateIndex = table.getColumnIndexByName(columnName);
+      Column selectedColumn = columns.get(updateIndex);
+      Entry attrValue =
+              selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
 
       // update
       if (ctx.K_WHERE() == null) {

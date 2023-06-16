@@ -154,7 +154,6 @@ public class Table implements Iterable<Row> {
       if (!oldKeyEntry.equals(newKeyEntry) && containsRow(newRow)) {
         throw new DuplicateKeyException();
       }
-      //      index.update(keyEntry, newRow);
       index.remove(oldKeyEntry);
       index.put(newKeyEntry, newRow);
 
@@ -295,9 +294,7 @@ public class Table implements Iterable<Row> {
   private class TableIterator implements Iterator<Row> {
     private Iterator<Pair<Entry, Row>> iterator;
 
-    TableIterator(Table table) {
-      this.iterator = table.index.iterator();
-    }
+    TableIterator(Table table) {this.iterator = table.index.iterator();}
 
     @Override
     public boolean hasNext() {

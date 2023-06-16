@@ -1,5 +1,6 @@
 package cn.edu.thssdb.index;
 
+import cn.edu.thssdb.exception.DuplicateKeyException;
 import cn.edu.thssdb.exception.KeyNotExistException;
 import cn.edu.thssdb.utils.Global;
 
@@ -74,7 +75,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     int index = binarySearch(key);
     int valueIndex = index >= 0 ? index : -index - 1;
     if (index >= 0) {
-      //      throw new DuplicateKeyException();
+            throw new DuplicateKeyException();
     } else {
       valuesAdd(valueIndex, value);
       keysAdd(valueIndex, key);
@@ -90,7 +91,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
       keysRemove(index);
     } else {
       System.err.println(key);
-      //      throw new KeyNotExistException();
+      throw new KeyNotExistException();
     }
     this.writeThisToDist();
   }
