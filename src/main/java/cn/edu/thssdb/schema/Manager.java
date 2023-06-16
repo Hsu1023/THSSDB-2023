@@ -1,7 +1,6 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
-import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
@@ -80,7 +79,7 @@ public class Manager {
     //    lock.writeLock().lock();
     try {
       if (databases.containsKey(name)) {
-        PageManager.deleteDBBuffer(name);
+//        PageManager.deleteDBBuffer(name);
         logger.dropDatabase(name);
         Database db = databases.get(name);
         Table[] tables = db.tables.values().toArray(new Table[0]);
@@ -152,7 +151,7 @@ public class Manager {
 
   public void checkPoint() {
     logger.checkPoint();
-    PageManager.checkPoint();
+//    PageManager.checkPoint();
   }
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {

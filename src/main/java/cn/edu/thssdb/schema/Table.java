@@ -60,8 +60,8 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
-    //    this.index = new BPlusTree<>();
+//    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
+        this.index = new BPlusTree<>();
     // TODO initiate lock status.
     //    recover();
   }

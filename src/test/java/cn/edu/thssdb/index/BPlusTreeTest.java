@@ -48,9 +48,9 @@ public class BPlusTreeTest {
     Column[] columns = new Column[1];
     columns[0] = new Column("", ColumnType.INT, 1, true, 2);
 
-    tree = new BPlusTree<>("..", ".", columns, 0, false);
+//    tree = new BPlusTree<>("..", ".", columns, 0, false);
 
-    //    tree = new BPlusTree<>();
+        tree = new BPlusTree<>();
     for (int i = 0; i < size; i++) {
       double random = Math.random();
       set.add((int) (random * size));

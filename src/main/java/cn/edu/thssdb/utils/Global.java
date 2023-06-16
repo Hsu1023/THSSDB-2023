@@ -20,7 +20,7 @@ public class Global {
 
   public static final String DATA_PATH = "./data";
 
-  public static final int PAGE_SIZE = 8192 * 2;
+  public static final int PAGE_SIZE = 8192;
 
   public static final int INIT_PAGE_NUM = 4;
 
@@ -28,5 +28,5 @@ public class Global {
 
   public static final int ARRAY_LIST_MAX_LENGTH = (int) (3 * Global.fanout) + 1;
 
-  public static final int BUFFER_POOL_SIZE = 1000;
+  public static final int BUFFER_POOL_SIZE = 4000;
 }

@@ -2,7 +2,6 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.DuplicateTableException;
 import cn.edu.thssdb.exception.TableNotExistException;
-import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.utils.Global;
@@ -78,7 +77,7 @@ public class Database {
         throw new TableNotExistException();
       }
       Table table = tables.get(tableName);
-      PageManager.deleteTableBuffer(name, tableName);
+//      PageManager.deleteTableBuffer(name, tableName);
 
       String tableMetaPath = PathUtil.getMetaFilePath(this.name, tableName);
       File tableMetaFile = new File(tableMetaPath);

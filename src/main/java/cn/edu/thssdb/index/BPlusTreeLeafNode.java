@@ -10,43 +10,12 @@ import java.util.Collections;
 public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode<K, V> {
 
   ArrayList<V> values;
-  //  private BPlusTreeLeafNode<K, V> next;
+  private BPlusTreeLeafNode<K, V> next;
 
-  public int nextPageId;
-
-  //  BPlusTreeLeafNode(int size) {
-  //    keys = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
-  //    values = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
-  //    nodeSize = size;
-  ////    this.pageId = pageId;
-  //  }
-
-  public BPlusTreeLeafNode(
-      int size,
-      ArrayList<K> k,
-      ArrayList<V> v,
-      int pageId,
-      int nextPageId,
-      PageManager pageManager) {
-    keys = k;
-    values = v;
+  BPlusTreeLeafNode(int size) {
+    keys = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
+    values = new ArrayList<>(Collections.nCopies((int) (1.5 * Global.fanout) + 1, null));
     nodeSize = size;
-    this.nextPageId = nextPageId;
-    this.pageId = pageId;
-    this.pageManager = pageManager;
-  }
-
-  public BPlusTreeLeafNode(int size, int pageId, int nextPageId, PageManager pageManager) {
-    keys = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
-    values = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
-    nodeSize = size;
-    this.nextPageId = nextPageId;
-    this.pageId = pageId;
-    this.pageManager = pageManager;
-  }
-
-  public void writeThisToDist() {
-    pageManager.writeLeafNode(pageId, this);
   }
 
   private void valuesAdd(int index, V value) {
@@ -79,7 +48,6 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
       valuesAdd(valueIndex, value);
       keysAdd(valueIndex, key);
     }
-    this.writeThisToDist();
   }
 
   @Override
@@ -89,7 +57,6 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
       valuesRemove(index);
       keysRemove(index);
     } else throw new KeyNotExistException();
-    this.writeThisToDist();
   }
 
   @Override
@@ -101,10 +68,7 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
   BPlusTreeNode<K, V> split() {
     int from = (size() + 1) / 2;
     int to = size();
-    BPlusTreeLeafNode<K, V> newSiblingNode =
-        new BPlusTreeLeafNode<>(to - from, pageManager.newPage(), -1, pageManager);
-
-    //    System.out.println("NEW LEAF");
+    BPlusTreeLeafNode<K, V> newSiblingNode = new BPlusTreeLeafNode<>(to - from);
     for (int i = 0; i < to - from; i++) {
       newSiblingNode.keys.set(i, keys.get(i + from));
       newSiblingNode.values.set(i, values.get(i + from));
@@ -112,9 +76,8 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
       values.set(i + from, null);
     }
     nodeSize = from;
-    newSiblingNode.nextPageId = nextPageId;
-    nextPageId = newSiblingNode.pageId;
-    newSiblingNode.writeThisToDist();
+    newSiblingNode.next = next;
+    next = newSiblingNode;
     return newSiblingNode;
   }
 
@@ -128,6 +91,6 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
       values.set(i + index, node.values.get(i));
     }
     nodeSize = index + length;
-    nextPageId = node.nextPageId;
+    next = node.next;
   }
 }
