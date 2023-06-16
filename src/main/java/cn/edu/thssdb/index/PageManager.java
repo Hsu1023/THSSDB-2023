@@ -78,7 +78,7 @@ public class PageManager {
 
   public static void deleteDBBuffer(String databaseName) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName)) {
@@ -92,13 +92,13 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   public static void deleteTableBuffer(String databaseName, String tableName) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName) && key.split("@")[1].equals(tableName)) {
@@ -112,13 +112,13 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   private static byte[] readBuffer(String databaseName, String tableName, int pageId) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       String hashKey = databaseName + "@" + tableName + "@" + pageId;
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
@@ -179,13 +179,13 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
   private static byte[] writeBuffer(String databaseName, String tableName, int pageId, byte[] buf) {
     try {
-//      lock.writeLock().lock();
+      //      lock.writeLock().lock();
       String hashKey = databaseName + "@" + tableName + "@" + pageId;
       Boolean contains = bufferIndex.containsKey(hashKey);
       if (contains) {
@@ -235,7 +235,7 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-//      lock.writeLock().unlock();
+      //      lock.writeLock().unlock();
     }
   }
 
@@ -307,7 +307,7 @@ public class PageManager {
 
   void readHeader() {
     try {
-//      pageLock.readLock().lock();
+      //      pageLock.readLock().lock();
       byte b[] = readBuffer(databaseName, tableName, 0);
       if (b == null) {
         rootPageId = -1;
@@ -320,13 +320,13 @@ public class PageManager {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//      pageLock.readLock().unlock();
+      //      pageLock.readLock().unlock();
     }
   }
 
   void writeInternalNode(int pageId, BPlusTreeInternalNode node) {
     try {
-//      pageLock.writeLock().lock();
+      //      pageLock.writeLock().lock();
       ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
       writer.writeChar('I');
       int size = node.nodeSize;
@@ -344,31 +344,30 @@ public class PageManager {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//      pageLock.writeLock().unlock();
+      //      pageLock.writeLock().unlock();
     }
   }
 
   public BPlusTreeNode getRootNode() {
-      if (rootPageId == -1) {
-        try {
-//          pageLock.writeLock().lock();
+    if (rootPageId == -1) {
+      try {
+        //          pageLock.writeLock().lock();
         rootPageId = this.newPage();
         writeHeader();
         BPlusTreeLeafNode newNode = new BPlusTreeLeafNode<>(0, rootPageId, -1, this);
         writeLeafNode(rootPageId, newNode);
-        return (BPlusTreeNode) newNode;}
-        finally {
-//          pageLock.writeLock().unlock();
-        }
-      } else return this.readNode(rootPageId);
-
+        return (BPlusTreeNode) newNode;
+      } finally {
+        //          pageLock.writeLock().unlock();
+      }
+    } else return this.readNode(rootPageId);
   }
 
   public BPlusTreeNode readNode(int pageId) {
     BPlusTreeNode res = null;
     if (pageId < 0) return null;
     try {
-//        pageLock.readLock().lock();
+      //        pageLock.readLock().lock();
       byte b[] = readBuffer(databaseName, tableName, pageId);
       ByteBufferReader reader = new ByteBufferReader(b);
       char type = reader.readChar();
@@ -377,7 +376,7 @@ public class PageManager {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//        pageLock.readLock().unlock();
+      //        pageLock.readLock().unlock();
       return res;
     }
   }
@@ -435,18 +434,17 @@ public class PageManager {
 
   void updateRoot(int rtPageId) {
     try {
-        pageLock.writeLock().lock();
+      pageLock.writeLock().lock();
       this.rootPageId = rtPageId;
       writeHeader();
-    }
-    finally {
-        pageLock.writeLock().unlock();
+    } finally {
+      pageLock.writeLock().unlock();
     }
   }
 
   void writeLeafNode(int pageId, BPlusTreeLeafNode node) {
     try {
-//      pageLock.writeLock().lock();
+      //      pageLock.writeLock().lock();
       ByteBufferWriter writer = new ByteBufferWriter(Global.PAGE_SIZE);
       writer.writeChar('L');
       int size = node.nodeSize;
@@ -465,21 +463,21 @@ public class PageManager {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//      pageLock.writeLock().unlock();
+      //      pageLock.writeLock().unlock();
     }
   }
 
   BPlusTreeLeafNode readLeafNode(ByteBufferReader reader, int pageId) throws IOException {
-      int size = reader.readInt();
-      int next = reader.readInt();
-      assert 2 + 2 + 2 + size * (KSize + VSize) <= Global.PAGE_SIZE;
-      ArrayList<Entry> k = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
-      ArrayList<Row> v = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
-      for (int i = 0; i < size; i++) {
-        k.set(i, readKey(reader, columns[primaryIndex]));
-        v.set(i, readValue(reader, columns));
-      }
-      return new BPlusTreeLeafNode(size, k, v, pageId, next, this);
+    int size = reader.readInt();
+    int next = reader.readInt();
+    assert 2 + 2 + 2 + size * (KSize + VSize) <= Global.PAGE_SIZE;
+    ArrayList<Entry> k = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
+    ArrayList<Row> v = new ArrayList<>(Collections.nCopies(Global.ARRAY_LIST_MAX_LENGTH, null));
+    for (int i = 0; i < size; i++) {
+      k.set(i, readKey(reader, columns[primaryIndex]));
+      v.set(i, readValue(reader, columns));
+    }
+    return new BPlusTreeLeafNode(size, k, v, pageId, next, this);
   }
 
   void writeKey(ByteBufferWriter writer, Column column, Entry e) throws IOException {
@@ -566,7 +564,7 @@ public class PageManager {
 
   void flush() {
     try {
-//      pageLock.writeLock().lock();
+      //      pageLock.writeLock().lock();
       String path = PathUtil.getBinFilePath(databaseName, tableName);
       File file = new File(path);
       if (totalPageNum == -1) {
@@ -592,7 +590,7 @@ public class PageManager {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-//      pageLock.writeLock().unlock();
+      //      pageLock.writeLock().unlock();
     }
   }
 }

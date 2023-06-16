@@ -48,14 +48,14 @@ public class Logger {
     } catch (IOException e) {
       throw new RuntimeException();
     } finally {
-        lock.readLock().unlock();
+      lock.readLock().unlock();
     }
     return lines;
   }
 
   public void resetFile(List<String> lines) {
     try {
-        lock.writeLock().lock();
+      lock.writeLock().lock();
       File f = new File(full_path);
       f.delete();
       f.createNewFile();
@@ -63,7 +63,7 @@ public class Logger {
     } catch (IOException e) {
       throw new RuntimeException();
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -79,7 +79,7 @@ public class Logger {
     } catch (IOException e) {
       throw new RuntimeException();
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 

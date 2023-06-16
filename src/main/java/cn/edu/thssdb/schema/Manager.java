@@ -25,8 +25,7 @@ public class Manager {
 
   private static String MANAGER_DATAPATH = Global.DATA_PATH + File.separator + "manager.db";
   //  private static ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-  private String seperateLevel =
-      Global.SEPERATE_LEVEL;
+  private String seperateLevel = Global.SEPERATE_LEVEL;
   public Lock meta_lock = new ReentrantLock();
 
   public ArrayList<Long> transaction_list =

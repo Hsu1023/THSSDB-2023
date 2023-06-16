@@ -13,8 +13,7 @@ import java.util.List;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Table implements Iterable<Row> {
-    ReentrantReadWriteLock lock = new ReentrantReadWriteLock()
-            ;
+  ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
   private String databaseName;
   public String tableName;
   public ArrayList<Column> columns;
@@ -85,7 +84,7 @@ public class Table implements Iterable<Row> {
       this.index.put(row.getEntries().get(this.primaryIndex), row);
 
     } finally {
-            this.lock.writeLock().unlock();
+      this.lock.writeLock().unlock();
     }
   }
 
@@ -103,7 +102,7 @@ public class Table implements Iterable<Row> {
     } catch (Exception e) {
       throw e;
     } finally {
-        lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -122,13 +121,12 @@ public class Table implements Iterable<Row> {
   }
 
   public Boolean contains(Row row) {
-  try {
+    try {
       lock.readLock().lock();
       return index.contains(row.getEntries().get(primaryIndex));
     } finally {
-            lock.readLock().unlock();
+      lock.readLock().unlock();
     }
-
   }
 
   public void delete(Row row) {
@@ -139,7 +137,7 @@ public class Table implements Iterable<Row> {
       //      }
       index.remove(row.getEntries().get(primaryIndex));
     } finally {
-            lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -161,7 +159,7 @@ public class Table implements Iterable<Row> {
       index.put(newKeyEntry, newRow);
 
     } finally {
-            this.lock.writeLock().unlock();
+      this.lock.writeLock().unlock();
     }
   }
 
