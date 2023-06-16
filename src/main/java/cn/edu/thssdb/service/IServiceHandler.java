@@ -68,13 +68,13 @@ public class IServiceHandler implements IService.Iface {
 
       LogicalPlan.LogicalPlanType type = plan.getType();
       Boolean autocommit = false;
-//      if (type == SELECT || type == DELETE || type == INSERT || type == UPDATE) {
-//        synchronized (manager.meta_lock) {
-//          if (!manager.transaction_list.contains(req.sessionId)) {
-//            autocommit = true;
-//          }
-//        }
-//      }
+      //      if (type == SELECT || type == DELETE || type == INSERT || type == UPDATE) {
+      //        synchronized (manager.meta_lock) {
+      //          if (!manager.transaction_list.contains(req.sessionId)) {
+      //            autocommit = true;
+      //          }
+      //        }
+      //      }
       switch (plan.getType()) {
         case CREATE_DB:
           //          System.out.println("[DEBUG] " + plan + " Session ID:" +
@@ -152,7 +152,8 @@ public class IServiceHandler implements IService.Iface {
 
         case DELETE:
           if (autocommit) {
-//            Manager.logger.session("[DEBUG] " + "AUTO COMMIT DELETE" + " Session ID:" + req.sessionId);
+            //            Manager.logger.session("[DEBUG] " + "AUTO COMMIT DELETE" + " Session ID:"
+            // + req.sessionId);
             manager.beginTransaction(req.sessionId);
           }
           //          System.out.println("[DEBUG] " + plan + " Session ID:" +

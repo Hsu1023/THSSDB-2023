@@ -566,7 +566,8 @@ public class Manager {
               || (comparator.LE() != null && curEntry.compareTo(comparedEntry) <= 0)
               || (comparator.GT() != null && curEntry.compareTo(comparedEntry) > 0)
               || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
-//            logger.session("SESSION:" + session + " DELETE " + database.getName() + " " + tableName + " " + curRow.toString());
+            //            logger.session("SESSION:" + session + " DELETE " + database.getName() + "
+            // " + tableName + " " + curRow.toString());
             logger.delete(database.getName(), table.tableName, curRow);
             table.delete(curRow);
           }
@@ -658,7 +659,7 @@ public class Manager {
       int updateIndex = table.getColumnIndexByName(columnName);
       Column selectedColumn = columns.get(updateIndex);
       Entry attrValue =
-              selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
+          selectedColumn.parseEntry(ctx.expression().comparer().literalValue().getText());
 
       // update
       if (ctx.K_WHERE() == null) {

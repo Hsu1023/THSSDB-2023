@@ -294,7 +294,9 @@ public class Table implements Iterable<Row> {
   private class TableIterator implements Iterator<Row> {
     private Iterator<Pair<Entry, Row>> iterator;
 
-    TableIterator(Table table) {this.iterator = table.index.iterator();}
+    TableIterator(Table table) {
+      this.iterator = table.index.iterator();
+    }
 
     @Override
     public boolean hasNext() {

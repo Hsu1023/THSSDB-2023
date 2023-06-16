@@ -78,7 +78,7 @@ public class PageManager {
 
   public static void deleteDBBuffer(String databaseName) {
     try {
-            lock.writeLock().lock();
+      lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName)) {
@@ -92,13 +92,13 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-            lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
   public static void deleteTableBuffer(String databaseName, String tableName) {
     try {
-            lock.writeLock().lock();
+      lock.writeLock().lock();
       ArrayList<String> toDelete = new ArrayList<>();
       for (String key : bufferIndex.keySet()) {
         if (key.split("@")[0].equals(databaseName) && key.split("@")[1].equals(tableName)) {
@@ -112,7 +112,7 @@ public class PageManager {
         bufferLinkedList.remove(key);
       }
     } finally {
-            lock.writeLock().unlock();
+      lock.writeLock().unlock();
     }
   }
 
@@ -176,8 +176,7 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-      if (lock.writeLock().isHeldByCurrentThread())
-        lock.writeLock().unlock();
+      if (lock.writeLock().isHeldByCurrentThread()) lock.writeLock().unlock();
     }
   }
 
@@ -234,8 +233,7 @@ public class PageManager {
       e.printStackTrace();
       return null;
     } finally {
-      if (lock.writeLock().isHeldByCurrentThread())
-            lock.writeLock().unlock();
+      if (lock.writeLock().isHeldByCurrentThread()) lock.writeLock().unlock();
     }
   }
 

@@ -83,7 +83,6 @@ public class Logger {
     }
   }
 
-
   public void delete(String database, String table, Row r) {
     String log = "DELETE@" + database + "@" + table + "@" + r.toString();
     List<String> Array = new ArrayList<>();
