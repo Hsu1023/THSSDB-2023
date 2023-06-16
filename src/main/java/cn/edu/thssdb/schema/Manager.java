@@ -1,12 +1,14 @@
 package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.*;
+import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.sql.SQLParser;
 import cn.edu.thssdb.type.ColumnType;
 import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.Logger;
+import cn.edu.thssdb.utils.PathUtil;
 
 import java.io.*;
 import java.util.*;
@@ -61,9 +63,9 @@ public class Manager {
         Database newDatabase = new Database(name);
         databases.put(name, newDatabase);
         change = true;
-        System.out.println("[DEBUG] " + "create db " + name);
+        //        System.out.println("[DEBUG] " + "create db " + name);
       } else {
-        System.out.println("[DEBUG] " + "duplicated db " + name);
+        //        System.out.println("[DEBUG] " + "duplicated db " + name);
         throw new DuplicateDatabaseException();
       }
     } finally {
@@ -78,22 +80,23 @@ public class Manager {
     //    lock.writeLock().lock();
     try {
       if (databases.containsKey(name)) {
+        PageManager.deleteDBBuffer(name);
         logger.dropDatabase(name);
         Database db = databases.get(name);
         Table[] tables = db.tables.values().toArray(new Table[0]);
         for (int i = 0; i < tables.length; i++) {
           db.dropTable(tables[i].tableName);
         }
-        File file = new File(Global.DATA_PATH + File.separator + name);
+        File file = new File(PathUtil.getDBFolderPath(name));
         if (file.exists()) {
           file.delete();
         }
         databases.remove(name);
         change = true;
-        System.out.println("[DEBUG] " + "delete db " + name);
+        //        System.out.println("[DEBUG] " + "delete db " + name);
 
       } else {
-        System.out.println("[DEBUG] " + "non-existed db " + name);
+        //        System.out.println("[DEBUG] " + "non-existed db " + name);
         throw new DatabaseNotExistException();
       }
     } finally {
@@ -149,7 +152,7 @@ public class Manager {
 
   public void checkPoint() {
     logger.checkPoint();
-    //    PageManager.checkPoint();
+    PageManager.checkPoint();
   }
 
   public void createTableIfNotExist(SQLParser.CreateTableStmtContext ctx) {
@@ -265,9 +268,9 @@ public class Manager {
                 tableConstraintContext.columnName(1).children.get(0).toString();
             String foreignTableName = tableConstraintContext.tableName().children.get(0).toString();
 
-            System.out.println("[DEBUG] " + localColumnName);
-            System.out.println("[DEBUG] " + foreignColumnName);
-            System.out.println("[DEBUG] " + foreignTableName);
+            //            System.out.println("[DEBUG] " + localColumnName);
+            //            System.out.println("[DEBUG] " + foreignColumnName);
+            //            System.out.println("[DEBUG] " + foreignTableName);
 
             if (!curDatabase.tables.containsKey(foreignTableName)) {
               throw new TableNotExistException();
@@ -405,11 +408,11 @@ public class Manager {
       }
 
       ArrayList<Entry> entries = new ArrayList<>();
-      System.out.println(allColumns);
-      System.out.println(selectedColumns);
+      //      System.out.println(allColumns);
+      //      System.out.println(selectedColumns);
       for (Column column : allColumns) {
         int id = selectedColumns.indexOf(column);
-        System.out.println(id);
+        //        System.out.println(id);
         String valueString = "NULL";
         if (id != -1) valueString = valueStringList.get(id);
         Entry entry = column.parseEntry(valueString);
@@ -418,7 +421,7 @@ public class Manager {
       Row newRow = new Row(entries);
       logger.insert(database.getName(), table.tableName, newRow);
       table.insert(newRow);
-      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+      //      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
       // for multiple values
       for (SQLParser.ValueEntryContext value : values.subList(1, values.size())) {
@@ -444,7 +447,7 @@ public class Manager {
         }
         newRow = new Row(entries);
         table.insert(newRow);
-        System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+        //        System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       }
 
     } finally {
@@ -570,7 +573,7 @@ public class Manager {
         }
       }
 
-      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+      //      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
     } finally {
       synchronized (meta_lock) {
@@ -636,7 +639,7 @@ public class Manager {
             if (session_queue.get(0) == session) { // 在原来的阻塞队列里
               int get_lock = table.get_x_lock(session);
               if (get_lock != -1) {
-                System.out.println("get x lock");
+                //                System.out.println("get x lock");
                 if (get_lock == 1) {
                   ArrayList<String> tmp = x_lock_dict.get(session);
                   if (tmp == null) {
@@ -705,7 +708,7 @@ public class Manager {
           }
         }
       }
-      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
+      //      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       // 判断是否默认commit
 
     } finally {
@@ -738,9 +741,9 @@ public class Manager {
     // 先找到条件左右的table和column
     String leftColumnName = null, rightColumnName = null;
     leftColumnName = joinCondition.expression(0).getText();
-    System.out.println(leftColumnName);
+    //    System.out.println(leftColumnName);
     rightColumnName = joinCondition.expression(1).getText();
-    System.out.println(rightColumnName);
+    //    System.out.println(rightColumnName);
     QueryTable left_table = null, right_table = null;
     // 找左侧table
     for (SQLParser.TableNameContext table : table_list) {
@@ -782,7 +785,7 @@ public class Manager {
     try {
       // 获取select语句包括的table names
       for (SQLParser.TableNameContext subCtx : ctx.tableQuery(0).tableName()) {
-        System.out.println("table name: " + subCtx.getText());
+        //        System.out.println("table name: " + subCtx.getText());
         table_names.add(subCtx.getText());
       }
       // lock
@@ -890,10 +893,10 @@ public class Manager {
       if (!isSelectAll) finalTable.filteredOnColumns(columnIndexs);
       return finalTable.toQueryResult();
     } catch (Exception e) {
-      System.out.println("Select Catch");
+      //      System.out.println("Select Catch");
       throw e;
     } finally {
-      System.out.println("Select Finally");
+      //      System.out.println("Select Finally");
       synchronized (meta_lock) {
         if (seperateLevel.equals("READ_COMMITTED")) {
           for (String table_name : table_names) {
@@ -903,7 +906,7 @@ public class Manager {
         } else if (seperateLevel.equals("SERIALIZABLE")) {
           if (!transaction_list.contains(
               session)) { // 如果没有begin transaction的情况，即当前会话不在transaction_list中
-            System.out.println("Release Select S locks");
+            //            System.out.println("Release Select S locks");
             // 释放锁
             Database the_database = curDatabase;
             for (String table_name : table_names) {
@@ -1012,19 +1015,19 @@ public class Manager {
   开始transaction
   */
   public void beginTransaction(long session) {
-    System.out.println("beginTransaction");
+    //    System.out.println("beginTransaction");
     try {
       synchronized (meta_lock) {
         // 如果是新开启的一个事务，要新创建s,x锁记录表
         if (transaction_list == null || !transaction_list.contains(session)) {
           transaction_list.add(session);
-          System.out.println(transaction_list);
+          //          System.out.println(transaction_list);
           ArrayList<String> s_lock_tables = new ArrayList<>();
           ArrayList<String> x_lock_tables = new ArrayList<>();
           s_lock_dict.put(session, s_lock_tables);
           x_lock_dict.put(session, x_lock_tables);
         } else {
-          System.out.println("not a new session");
+          //          System.out.println("not a new session");
         }
       }
     } finally {
@@ -1035,7 +1038,7 @@ public class Manager {
   commit
    */
   public void commit(long session) {
-    System.out.println("commit");
+    //    System.out.println("commit");
     try {
       synchronized (meta_lock) {
         if (transaction_list.contains(session)) {
@@ -1052,10 +1055,10 @@ public class Manager {
 
           // if SERIALIZABLE free s lock
           if (seperateLevel.equals("SERIALIZABLE")) {
-            System.out.println("commit: free s lock");
+            //            System.out.println("commit: free s lock");
             ArrayList<String> s_table_list =
                 s_lock_dict.get(session); // 虽然更新了Table里的s_lock_list，但是没更新manager里的s_lock_dict
-            System.out.println(s_table_list);
+            //            System.out.println(s_table_list);
             for (String table_name : s_table_list) {
               Table the_table = the_database.get(table_name);
               the_table.free_s_lock(session);
@@ -1064,7 +1067,7 @@ public class Manager {
             s_lock_dict.put(session, s_table_list);
           }
         } else {
-          System.out.println("session not in the list");
+          //          System.out.println("session not in the list");
         }
       }
     } finally {

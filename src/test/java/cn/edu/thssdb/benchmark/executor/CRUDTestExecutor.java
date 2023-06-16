@@ -20,8 +20,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.lang.System.exit;
-
 public class CRUDTestExecutor extends TestExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CRUDTestExecutor.class);
@@ -131,12 +129,7 @@ public class CRUDTestExecutor extends TestExecutor {
     columnList.add(1);
     columnList.add(2);
     expectedResult = extractData(expectedResult, columnList);
-    try {
-      Assert.assertTrue(equals(queryResult, expectedResult));
-    } catch (AssertionError e) {
-      LOGGER.error("Query result not match, expected: {}, actual: {}", expectedResult, queryResult);
-      exit(0);
-    }
+    Assert.assertTrue(equals(queryResult, expectedResult));
 
     // test3: query with filter for primary key
     querySql = "select column0,column3 from test_table3 where column3 < 5;";

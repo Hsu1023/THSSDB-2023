@@ -64,8 +64,6 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
 
   @Override
   V get(K key) {
-    //    System.out.println("this" + pageId);
-    //    System.out.println("child" + childrenPageId);
     return searchChild(key).get(key);
   }
 
@@ -176,9 +174,9 @@ public final class BPlusTreeInternalNode<K extends Comparable<K>, V> extends BPl
   private BPlusTreeNode<K, V> searchChild(K key) {
     int index = binarySearch(key);
     BPlusTreeNode child = getChildNode(index >= 0 ? index + 1 : -index - 1);
-    if (child == null) {
-      System.out.println("child is null");
-    }
+    //    if (child == null) {
+    //      System.out.println("child is null");
+    //    }
     getChildNode(index >= 0 ? index + 1 : -index - 1);
     return child;
   }

@@ -64,7 +64,56 @@ public class PageManager {
   private static HashMap<String, Integer> bufferIndex = new HashMap<>();
   private static LinkedList<String> bufferLinkedList =
       new LinkedList<>(); // 储存bufferName和对应pool的index
+
+  private static LinkedList<Integer> emptyBufferIndex = new LinkedList<>();
+
+  static {
+    for (int i = 0; i < Global.BUFFER_POOL_SIZE; i++) {
+      emptyBufferIndex.add(i);
+    }
+  }
+
   private static byte[][] bufferPool = new byte[Global.BUFFER_POOL_SIZE][Global.PAGE_SIZE];
+
+  public static void deleteDBBuffer(String databaseName) {
+    try {
+      lock.writeLock().lock();
+      ArrayList<String> toDelete = new ArrayList<>();
+      for (String key : bufferIndex.keySet()) {
+        if (key.split("@")[0].equals(databaseName)) {
+          toDelete.add(key);
+        }
+      }
+      for (String key : toDelete) {
+        int index = bufferIndex.get(key);
+        emptyBufferIndex.add(index);
+        bufferIndex.remove(key);
+        bufferLinkedList.remove(key);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
+
+  public static void deleteTableBuffer(String databaseName, String tableName) {
+    try {
+      lock.writeLock().lock();
+      ArrayList<String> toDelete = new ArrayList<>();
+      for (String key : bufferIndex.keySet()) {
+        if (key.split("@")[0].equals(databaseName) && key.split("@")[1].equals(tableName)) {
+          toDelete.add(key);
+        }
+      }
+      for (String key : toDelete) {
+        int index = bufferIndex.get(key);
+        emptyBufferIndex.add(index);
+        bufferIndex.remove(key);
+        bufferLinkedList.remove(key);
+      }
+    } finally {
+      lock.writeLock().unlock();
+    }
+  }
 
   private static byte[] readBuffer(String databaseName, String tableName, int pageId) {
     try {
@@ -76,9 +125,9 @@ public class PageManager {
         //        bufferLinkedList.indexOf(hashKey);
         bufferLinkedList.remove(hashKey);
         bufferLinkedList.addFirst(hashKey);
-        if (index >= Global.BUFFER_POOL_SIZE) {
-          System.out.println("index out of bound");
-        }
+        //        if (index >= Global.BUFFER_POOL_SIZE) {
+        //          System.out.println("index out of bound");
+        //        }
         return bufferPool[index];
       } else {
         String pathRead = PathUtil.getBinFilePath(databaseName, tableName);
@@ -97,8 +146,8 @@ public class PageManager {
             bufferLinkedList.addFirst(hashKey);
             bufferIndex.remove(lastHashKey);
             bufferIndex.put(hashKey, index);
-            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
-              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
+            //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
+            //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
             return bufferPool[index];
           } catch (Exception e) {
             e.printStackTrace();
@@ -106,13 +155,17 @@ public class PageManager {
           }
         } else {
           try (RandomAccessFile raf = new RandomAccessFile(new File(pathRead), "r")) {
+
+            int index = -1;
+            assert emptyBufferIndex.size() > 0;
+            index = emptyBufferIndex.removeFirst();
+            if (index == -1) throw new RuntimeException();
             raf.seek(pageId * Global.PAGE_SIZE);
             bufferLinkedList.addFirst(hashKey);
-            int index = bufferLinkedList.size() - 1;
             bufferIndex.put(hashKey, index);
             raf.read(bufferPool[index]);
-            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
-              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
+            //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
+            //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
             return bufferPool[index];
           } catch (Exception e) {
@@ -155,8 +208,8 @@ public class PageManager {
             bufferLinkedList.addFirst(hashKey);
             bufferIndex.put(hashKey, index);
             bufferIndex.remove(lastHashKey);
-            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
-              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
+            //            if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
+            //              System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
             return bufferPool[index];
           } catch (Exception e) {
@@ -164,12 +217,15 @@ public class PageManager {
             return null;
           }
         } else {
+          int index = -1;
+          assert emptyBufferIndex.size() > 0;
+          index = emptyBufferIndex.removeFirst();
+          if (index == -1) throw new RuntimeException();
           bufferLinkedList.addFirst(hashKey);
-          int index = bufferLinkedList.size() - 1;
           bufferIndex.put(hashKey, index);
           bufferPool[index] = buf;
-          if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
-            System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
+          //          if (bufferLinkedList.size() > Global.BUFFER_POOL_SIZE)
+          //            System.out.println("bufferLinkedList.size()>=Global.BUFFER_POOL_SIZE");
 
           return bufferPool[index];
         }
@@ -453,9 +509,9 @@ public class PageManager {
       throw new RuntimeException();
     }
 
-    if (type == ColumnType.FLOAT) {
-      System.out.println("here");
-    }
+    //    if (type == ColumnType.FLOAT) {
+    //      System.out.println("here");
+    //    }
     if (type == ColumnType.INT) value = reader.readInt();
     else if (type == ColumnType.FLOAT) value = reader.readFloat();
     else if (type == ColumnType.LONG) value = reader.readLong();

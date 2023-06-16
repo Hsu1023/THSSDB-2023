@@ -49,14 +49,14 @@ public class Table implements Iterable<Row> {
     for (int i = 0; i < this.columns.size(); i++) {
       if (this.columns.get(i).isPrimary()) {
         if (this.primaryIndex >= 0) {
-          System.out.println("[DEBUG] " + "multi primary keys");
+          //          System.out.println("[DEBUG] " + "multi primary keys");
           throw new MultiPrimaryKeyException();
         }
         this.primaryIndex = i;
       }
     }
     if (this.primaryIndex < 0) {
-      System.out.println("[DEBUG] " + "no primary key");
+      //      System.out.println("[DEBUG] " + "no primary key");
       throw new NoPrimaryKeyException();
     }
 
@@ -244,8 +244,8 @@ public class Table implements Iterable<Row> {
         tplock = 1;
       }
     }
-    System.out.println("tplock+-");
-    System.out.println(tplock);
+    //    System.out.println("tplock+-");
+    //    System.out.println(tplock);
   }
 
   public int get_s_lock(long session) {
@@ -268,7 +268,7 @@ public class Table implements Iterable<Row> {
       s_lock_list.add(session); // 未加锁 把自己加上
       tplock = 1;
       value = 1;
-      System.out.println(s_lock_list);
+      //      System.out.println(s_lock_list);
     }
     return value;
 

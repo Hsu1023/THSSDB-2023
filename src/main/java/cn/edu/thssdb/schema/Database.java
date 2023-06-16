@@ -2,9 +2,11 @@ package cn.edu.thssdb.schema;
 
 import cn.edu.thssdb.exception.DuplicateTableException;
 import cn.edu.thssdb.exception.TableNotExistException;
+import cn.edu.thssdb.index.PageManager;
 import cn.edu.thssdb.query.QueryResult;
 import cn.edu.thssdb.query.QueryTable;
 import cn.edu.thssdb.utils.Global;
+import cn.edu.thssdb.utils.PathUtil;
 
 import java.awt.*;
 import java.io.*;
@@ -76,20 +78,21 @@ public class Database {
         throw new TableNotExistException();
       }
       Table table = tables.get(tableName);
+      PageManager.deleteTableBuffer(name, tableName);
 
-      String tableMetaPath = table.getMetaDataPath();
+      String tableMetaPath = PathUtil.getMetaFilePath(this.name, tableName);
       File tableMetaFile = new File(tableMetaPath);
       if (!tableMetaFile.exists() || !tableMetaFile.isFile() || !tableMetaFile.delete()) {
         throw new RuntimeException();
       }
 
-      String tableDataPath = table.getBinPath();
+      String tableDataPath = PathUtil.getBinFilePath(this.name, tableName);
       File tableDataFile = new File(tableDataPath);
       if (tableDataFile.exists() && (!tableDataFile.isFile() || !tableDataFile.delete())) {
         throw new RuntimeException();
       }
 
-      String tableFolerPath = table.getFolderPath();
+      String tableFolerPath = PathUtil.getTableFolderPath(this.name, tableName);
       File tableFolderPath = new File(tableFolerPath);
       if (!tableFolderPath.exists()
           || !tableFolderPath.isDirectory()

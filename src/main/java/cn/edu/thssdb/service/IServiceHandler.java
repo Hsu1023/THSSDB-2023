@@ -77,13 +77,15 @@ public class IServiceHandler implements IService.Iface {
       }
       switch (plan.getType()) {
         case CREATE_DB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           CreateDatabasePlan createDBPlan = (CreateDatabasePlan) plan;
           manager.createDatabaseIfNotExists(createDBPlan.getDatabaseName());
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case SHOW_DB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           ExecuteStatementResp resp_showdb = new ExecuteStatementResp(StatusUtil.success(), true);
           resp_showdb.setColumnsList(Arrays.asList("Names of Databases"));
           List<String> names = manager.getDatabaseNames();
@@ -93,27 +95,31 @@ public class IServiceHandler implements IService.Iface {
           return resp_showdb;
 
         case DROP_DB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           DropDatabasePlan dropDBPlan = (DropDatabasePlan) plan;
           String dbName = dropDBPlan.getDatabaseName();
           manager.deleteDatabase(dbName);
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case USE_DB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           UseDatabasePlan useDBPlan = (UseDatabasePlan) plan;
           String currDB = useDBPlan.getDatabaseName();
           manager.switchDatabase(currDB);
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case CREATE_TB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           CreateTablePlan createTBPlan = (CreateTablePlan) plan;
           manager.createTableIfNotExist(createTBPlan.getCtx());
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case SHOW_TB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           ShowTablePlan showTBPlan = (ShowTablePlan) plan;
           String tableMessage = manager.showTable(showTBPlan.getTableName());
           ExecuteStatementResp resp_showtb = new ExecuteStatementResp(StatusUtil.success(), true);
@@ -124,7 +130,8 @@ public class IServiceHandler implements IService.Iface {
           return resp_showtb;
 
         case DROP_TB:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           DropTablePlan dropTBPlan = (DropTablePlan) plan;
           String tbName = dropTBPlan.getTableName();
           manager.deleteTable(tbName);
@@ -134,7 +141,8 @@ public class IServiceHandler implements IService.Iface {
           if (autocommit) {
             manager.beginTransaction(req.sessionId);
           }
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           InsertPlan insertPlan = (InsertPlan) plan;
           manager.insert(insertPlan.getCtx(), req.getSessionId());
           if (autocommit) {
@@ -146,7 +154,8 @@ public class IServiceHandler implements IService.Iface {
           if (autocommit) {
             manager.beginTransaction(req.sessionId);
           }
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           DeletePlan deletePlan = (DeletePlan) plan;
           manager.delete(deletePlan.getCtx(), req.getSessionId());
           if (autocommit) {
@@ -157,7 +166,8 @@ public class IServiceHandler implements IService.Iface {
           if (autocommit) {
             manager.beginTransaction(req.sessionId);
           }
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           SelectPlan selectPlan = (SelectPlan) plan;
           QueryResult queryResult = manager.select(selectPlan.getCtx(), req.getSessionId());
           ExecuteStatementResp resp = new ExecuteStatementResp(StatusUtil.success(), true);
@@ -177,7 +187,8 @@ public class IServiceHandler implements IService.Iface {
           if (autocommit) {
             manager.beginTransaction(req.sessionId);
           }
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           UpdatePlan updatePlan = (UpdatePlan) plan;
           manager.update(updatePlan.getCtx(), req.getSessionId());
           if (autocommit) {
@@ -186,18 +197,21 @@ public class IServiceHandler implements IService.Iface {
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case BEGIN_TRANS:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           BeginTransactionPlan beginTransactionPlan = (BeginTransactionPlan) plan;
           manager.beginTransaction(req.getSessionId());
           return new ExecuteStatementResp(StatusUtil.success(), false);
 
         case COMMIT:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           CommitPlan commitPlan = (CommitPlan) plan;
           manager.commit(req.getSessionId());
           return new ExecuteStatementResp(StatusUtil.success(), false);
         case CHECKPOINT:
-          System.out.println("[DEBUG] " + plan + " Session ID:" + String.valueOf(req.sessionId));
+          //          System.out.println("[DEBUG] " + plan + " Session ID:" +
+          // String.valueOf(req.sessionId));
           manager.checkPoint();
           return new ExecuteStatementResp(StatusUtil.success(), false);
         default:

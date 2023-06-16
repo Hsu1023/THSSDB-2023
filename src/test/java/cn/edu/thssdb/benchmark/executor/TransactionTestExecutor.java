@@ -89,13 +89,13 @@ public class TransactionTestExecutor extends TestExecutor {
 
   public void testDirtyRead() throws Exception {
     CompletableFuture<Void> future;
-    client1.executeStatement("begin transaction");
     client2.executeStatement("begin transaction");
+    client1.executeStatement("begin transaction");
     try {
       queryAndCheckOneColumn(
           client1, "select count from tx where id = 1;", Collections.singletonList("1"));
       LOGGER.info("Init value of table1(id=1) is 1");
-      client1.executeStatement("update tx set count = 100 where id = 0;");
+      client1.executeStatement("update tx set count = 100 where id = 1;");
       future =
           CompletableFuture.runAsync(
               () -> {
