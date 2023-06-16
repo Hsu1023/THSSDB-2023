@@ -260,7 +260,7 @@ public class PageManager {
 
   public int newPage() {
     try {
-      lock.writeLock().lock();
+      pageLock.writeLock().lock();
 
       if (vacantPage.isEmpty()) {
         ++curUsedPageNum;
@@ -278,7 +278,7 @@ public class PageManager {
         return ret;
       }
     } finally {
-      lock.writeLock().unlock();
+      pageLock.writeLock().unlock();
     }
   }
 
