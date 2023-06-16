@@ -10,9 +10,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Table implements Iterable<Row> {
-  //  ReentrantReadWriteLock lock;
+    ReentrantReadWriteLock lock = new ReentrantReadWriteLock()
+            ;
   private String databaseName;
   public String tableName;
   public ArrayList<Column> columns;
@@ -75,36 +77,21 @@ public class Table implements Iterable<Row> {
     return -1;
   }
 
-  private void recover() {
-    //    try {
-    //      // TODO lock control
-    //      ArrayList<Row> rowsOnDisk = deserialize();
-    //      for (Row row : rowsOnDisk) this.index.put(row.getEntries().get(this.primaryIndex), row);
-    //    } finally {
-    //      // TODO lock control
-    //    }
-  }
-
-  public void persist() {
-    //    serialize();
-  }
-
   public void insert(Row row) {
     try {
-      // TODO lock control
-      //      this.lock.writeLock().lock();
+      lock.writeLock().lock();
       this.checkRowValidInTable(row);
       if (this.containsRow(row)) throw new DuplicateKeyException();
       this.index.put(row.getEntries().get(this.primaryIndex), row);
 
     } finally {
-      // TODO lock control
-      //      this.lock.writeLock().unlock();
+            this.lock.writeLock().unlock();
     }
   }
 
   public void insert(String row) {
     try {
+      lock.writeLock().lock();
       String[] info = row.split(", ");
       ArrayList<Entry> entries = new ArrayList<>();
       int i = 0;
@@ -115,29 +102,44 @@ public class Table implements Iterable<Row> {
       index.put(entries.get(primaryIndex), new Row(entries));
     } catch (Exception e) {
       throw e;
+    } finally {
+        lock.writeLock().unlock();
     }
   }
 
   public void delete(String row) {
-    ColumnType c = columns.get(primaryIndex).getColumnType();
-    String[] info = row.split(", ");
-    Entry primaryEntry = new Entry(ColumnType.getColumnTypeValue(c, info[primaryIndex]));
-    index.remove(primaryEntry);
+    try {
+      lock.writeLock().lock();
+      ColumnType c = columns.get(primaryIndex).getColumnType();
+      String[] info = row.split(", ");
+      Entry primaryEntry = new Entry(ColumnType.getColumnTypeValue(c, info[primaryIndex]));
+      index.remove(primaryEntry);
+    } catch (Exception e) {
+      e.printStackTrace();
+    } finally {
+      lock.writeLock().unlock();
+    }
   }
 
   public Boolean contains(Row row) {
-    return index.contains(row.getEntries().get(primaryIndex));
+  try {
+      lock.readLock().lock();
+      return index.contains(row.getEntries().get(primaryIndex));
+    } finally {
+            lock.readLock().unlock();
+    }
+
   }
 
   public void delete(Row row) {
-    //    lock.writeLock().lock();
     try {
+      lock.writeLock().lock();
       //      if (!this.contains(row)) {
       //        throw new RowNotExistException();
       //      }
       index.remove(row.getEntries().get(primaryIndex));
     } finally {
-      //      lock.writeLock().unlock();
+            lock.writeLock().unlock();
     }
   }
 
@@ -146,8 +148,8 @@ public class Table implements Iterable<Row> {
   }
 
   public void update(Row oldRow, Row newRow) {
-    //    this.lock.writeLock().lock();
     try {
+      this.lock.writeLock().lock();
       checkRowValidInTable(newRow);
       Entry oldKeyEntry = oldRow.getEntries().get(primaryIndex);
       Entry newKeyEntry = newRow.getEntries().get(primaryIndex);
@@ -159,7 +161,7 @@ public class Table implements Iterable<Row> {
       index.put(newKeyEntry, newRow);
 
     } finally {
-      //      this.lock.writeLock().unlock();
+            this.lock.writeLock().unlock();
     }
   }
 
@@ -191,49 +193,13 @@ public class Table implements Iterable<Row> {
   }
 
   private Boolean containsRow(Row row) {
-    return this.index.contains(row.getEntries().get(this.primaryIndex));
+    try {
+      this.lock.readLock().lock();
+      return this.index.contains(row.getEntries().get(this.primaryIndex));
+    } finally {
+      this.lock.readLock().unlock();
+    }
   }
-
-  //  private void serialize() {
-  //    try {
-  //      File tableFolder = new File(this.getFolderPath());
-  //      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
-  //        throw new RuntimeException();
-  //      File tableFile = new File(this.getDataPath());
-  //      if (!tableFile.exists() ? !tableFile.createNewFile() : !tableFile.isFile())
-  //        throw new RuntimeException();
-  //      FileOutputStream fileOutputStream = new FileOutputStream(this.getDataPath());
-  //      ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream);
-  //      for (Row row : this) objectOutputStream.writeObject(row);
-  //      objectOutputStream.close();
-  //      fileOutputStream.close();
-  //    } catch (Exception e) {
-  //      throw new RuntimeException();
-  //    }
-  //  }
-
-  //  private ArrayList<Row> deserialize() {
-  //    try {
-  //      File tableFolder = new File(this.getFolderPath());
-  //      if (!tableFolder.exists() ? !tableFolder.mkdirs() : !tableFolder.isDirectory())
-  //        throw new RuntimeException();
-  //      File tableFile = new File(this.getDataPath());
-  //      if (!tableFile.exists()) return new ArrayList<>();
-  //      FileInputStream fileInputStream = new FileInputStream(this.getDataPath());
-  //      ObjectInputStream objectInputStream = new ObjectInputStream(fileInputStream);
-  //      ArrayList<Row> rowsOnDisk = new ArrayList<>();
-  //      Object tmpObj;
-  //      while (fileInputStream.available() > 0) {
-  //        tmpObj = objectInputStream.readObject();
-  //        rowsOnDisk.add((Row) tmpObj);
-  //      }
-  //      objectInputStream.close();
-  //      fileInputStream.close();
-  //      return rowsOnDisk;
-  //    } catch (Exception e) {
-  //      throw new RuntimeException();
-  //    }
-  //  }
 
   public void free_s_lock(long session) {
     if (s_lock_list.contains(session)) {

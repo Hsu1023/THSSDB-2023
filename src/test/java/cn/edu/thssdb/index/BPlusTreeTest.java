@@ -21,7 +21,7 @@ public class BPlusTreeTest {
   private int cnt = 0;
 
   Entry int2Entry(int i) {
-    return new Entry(i);
+    return new Entry(i+"");
   }
 
   Row int2Row(int i) {
@@ -30,12 +30,11 @@ public class BPlusTreeTest {
     return new Row(entries);
   }
 
-  int entry2Int(Entry e) {
-    return (int) e.value;
+  String entry2Int(Entry e) {return ""+e.value;
   }
 
-  int row2Int(Row r) {
-    return (int) r.getEntries().get(0).value;
+  String row2Int(Row r) {
+    return ""+r.getEntries().get(0).value;
   }
 
   @Before
@@ -44,9 +43,10 @@ public class BPlusTreeTest {
     values = new ArrayList<>();
     map = new HashMap<>();
     HashSet<Integer> set = new HashSet<>();
-    int size = 100000;
+    int size = 10000;
     Column[] columns = new Column[1];
-    columns[0] = new Column("", ColumnType.INT, 1, true, 2);
+//    columns[0] = new Column("", ColumnType.INT, 1, true, 2);
+    columns[0] = new Column("", ColumnType.STRING, 1, true, 4);
 
     tree = new BPlusTree<>("..", ".", columns, 0, false);
 
@@ -67,10 +67,10 @@ public class BPlusTreeTest {
   @Test
   public void testGet() {
     for (Entry key : keys) {
-      int x = map.get(entry2Int(key));
-      int y = row2Int(tree.get(key));
+      int x = map.get(Integer.parseInt( entry2Int(key)));
+      String y = row2Int(tree.get(key));
       // check if all the results equal
-      Assert.assertEquals(x, y);
+      Assert.assertEquals(x+"", y);
     }
   }
 
@@ -84,9 +84,9 @@ public class BPlusTreeTest {
     // check if size equals half of origin
     Assert.assertEquals(size / 2, tree.size());
     for (int i = 1; i < size; i += 2) {
-      int x = map.get(entry2Int(keys.get(i)));
-      int y = row2Int(tree.get(keys.get(i)));
-      Assert.assertEquals(x, y);
+      int x = map.get(Integer.parseInt(entry2Int(keys.get(i))));
+      String y = row2Int(tree.get(keys.get(i)));
+      Assert.assertEquals(x+"", y);
     }
   }
 

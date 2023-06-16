@@ -6,11 +6,15 @@ import java.io.*;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class Logger {
   private String folder_name;
   private String file_name;
   private String full_path;
+
+  // write lock
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   public Logger(String folder_name, String file_name) {
     this.folder_name = folder_name;
@@ -35,6 +39,7 @@ public class Logger {
     ArrayList<String> lines = new ArrayList<>();
     String str;
     try {
+      lock.readLock().lock();
       BufferedReader reader = new BufferedReader(new FileReader(full_path));
       while ((str = reader.readLine()) != null) {
         lines.add(str);
@@ -42,23 +47,29 @@ public class Logger {
       reader.close();
     } catch (IOException e) {
       throw new RuntimeException();
+    } finally {
+        lock.readLock().unlock();
     }
     return lines;
   }
 
   public void resetFile(List<String> lines) {
     try {
+        lock.writeLock().lock();
       File f = new File(full_path);
       f.delete();
       f.createNewFile();
       writeLines(lines);
     } catch (IOException e) {
       throw new RuntimeException();
+    } finally {
+        lock.writeLock().unlock();
     }
   }
 
   public void writeLines(List<String> lines) {
     try {
+      lock.writeLock().lock();
       BufferedWriter writer = new BufferedWriter(new FileWriter(full_path, true));
       for (String line : lines) {
         writer.write(line);
@@ -67,6 +78,8 @@ public class Logger {
       writer.close();
     } catch (IOException e) {
       throw new RuntimeException();
+    } finally {
+        lock.writeLock().unlock();
     }
   }
 

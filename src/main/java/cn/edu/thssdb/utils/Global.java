@@ -1,7 +1,7 @@
 package cn.edu.thssdb.utils;
 
 public class Global {
-  public static int fanout = 65;
+  public static int fanout = 129;
 
   public static int SUCCESS_CODE = 0;
   public static int FAILURE_CODE = -1;
@@ -28,5 +28,7 @@ public class Global {
 
   public static final int ARRAY_LIST_MAX_LENGTH = (int) (3 * Global.fanout) + 1;
 
-  public static final int BUFFER_POOL_SIZE = 1000;
+  public static final int BUFFER_POOL_SIZE = 5000;
+
+  public static final String SEPERATE_LEVEL = "READ_COMMITTED";// could be changed into "READ_COMMITTED" or "SERIALIZABLE"
 }

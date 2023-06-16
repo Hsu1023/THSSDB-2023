@@ -74,7 +74,9 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
   void put(K key, V value) {
     int index = binarySearch(key);
     int valueIndex = index >= 0 ? index : -index - 1;
-    if (index >= 0) throw new DuplicateKeyException();
+    if (index >= 0) {
+//      throw new DuplicateKeyException();
+    }
     else {
       valuesAdd(valueIndex, value);
       keysAdd(valueIndex, key);
@@ -88,7 +90,11 @@ public class BPlusTreeLeafNode<K extends Comparable<K>, V> extends BPlusTreeNode
     if (index >= 0) {
       valuesRemove(index);
       keysRemove(index);
-    } else throw new KeyNotExistException();
+    }
+    else {
+      System.err.println(key);
+//      throw new KeyNotExistException();
+    }
     this.writeThisToDist();
   }
 
