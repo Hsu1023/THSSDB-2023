@@ -82,6 +82,7 @@ public class Logger {
       lock.writeLock().unlock();
     }
   }
+
   public void message(String m) {
     String log = "MESSAGE@" + m;
     List<String> Array = new ArrayList<>();

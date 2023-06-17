@@ -62,7 +62,8 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, Global.RECOVER_FROM_DISC);
+    this.index =
+        new BPlusTree<>(databaseName, tableName, columns, primaryIndex, Global.RECOVER_FROM_DISC);
     //    this.index = new BPlusTree<>();
     // TODO initiate lock status.
     //    recover();

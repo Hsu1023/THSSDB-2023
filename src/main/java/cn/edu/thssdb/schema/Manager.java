@@ -447,7 +447,8 @@ public class Manager {
           if (id != -1) valueString = valueStringList.get(id);
           Entry entry = column.parseEntry(valueString);
           entries.add(entry);
-        }try {
+        }
+        try {
           logger.insert(database.getName(), table.tableName, newRow);
           newRow = new Row(entries);
           table.insert(newRow);
@@ -576,7 +577,8 @@ public class Manager {
               || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
             //            logger.session("SESSION:" + session + " DELETE " + database.getName() + "
             // " + tableName + " " + curRow.toString());
-//            logger.message("delete:" + session + ":" + database.getName() + ":" + table.tableName);
+            //            logger.message("delete:" + session + ":" + database.getName() + ":" +
+            // table.tableName);
             try {
               logger.delete(database.getName(), table.tableName, curRow);
               table.delete(curRow);
@@ -719,7 +721,8 @@ public class Manager {
             oldRowEntries.set(updateIndex, attrValue);
             Row newRow = new Row(oldRowEntries);
             try {
-//            logger.message("UPDATE:" + session + " " + database.getName() + " " + tableName);
+              //            logger.message("UPDATE:" + session + " " + database.getName() + " " +
+              // tableName);
               logger.update(database.getName(), table.tableName, curRow, newRow);
               table.update(curRow, newRow);
             } catch (Exception e) {
@@ -999,36 +1002,36 @@ public class Manager {
 
   private void recover() {
     if (!Global.RECOVER_FROM_DISC)
-    //    lock.writeLock().lock();
-    try {
-      File readDatabasesFile = new File(MANAGER_DATAPATH);
-      if (!readDatabasesFile.exists()) return;
+      //    lock.writeLock().lock();
       try {
-        FileReader fileReader = new FileReader(MANAGER_DATAPATH);
-        BufferedReader reader = new BufferedReader(fileReader);
-        String line;
-        while ((line = reader.readLine()) != null) {
-          createDatabaseIfNotExists(line); // recover table inside init databse
-        }
-        reader.close();
+        File readDatabasesFile = new File(MANAGER_DATAPATH);
+        if (!readDatabasesFile.exists()) return;
+        try {
+          FileReader fileReader = new FileReader(MANAGER_DATAPATH);
+          BufferedReader reader = new BufferedReader(fileReader);
+          String line;
+          while ((line = reader.readLine()) != null) {
+            createDatabaseIfNotExists(line); // recover table inside init databse
+          }
+          reader.close();
 
-        List<String> lines = logger.readLog();
-        for (int i = 0; i < lines.size(); i++) {
-          line = lines.get(i);
-          String[] log = line.split("@", 4);
-          Database tmpDatabase = databases.get(log[1]);
-          Table tmpTable = tmpDatabase.get(log[2]);
-          if (log[0].equals("DELETE")) tmpTable.delete(log[3]);
-          else if (log[0].equals("INSERT")) tmpTable.insert(log[3]);
-        }
+          List<String> lines = logger.readLog();
+          for (int i = 0; i < lines.size(); i++) {
+            line = lines.get(i);
+            String[] log = line.split("@", 4);
+            Database tmpDatabase = databases.get(log[1]);
+            Table tmpTable = tmpDatabase.get(log[2]);
+            if (log[0].equals("DELETE")) tmpTable.delete(log[3]);
+            else if (log[0].equals("INSERT")) tmpTable.insert(log[3]);
+          }
 
-      } catch (Exception e) {
-        e.printStackTrace();
-        // throw exception
+        } catch (Exception e) {
+          e.printStackTrace();
+          // throw exception
+        }
+      } finally {
+        //      lock.writeLock().unlock();
       }
-    } finally {
-      //      lock.writeLock().unlock();
-    }
   }
 
   /*
