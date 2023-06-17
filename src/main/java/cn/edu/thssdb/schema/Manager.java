@@ -418,8 +418,12 @@ public class Manager {
         entries.add(entry);
       }
       Row newRow = new Row(entries);
-      logger.insert(database.getName(), table.tableName, newRow);
-      table.insert(newRow);
+      try {
+        logger.insert(database.getName(), table.tableName, newRow);
+        table.insert(newRow);
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
       //      System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
 
       // for multiple values
@@ -443,9 +447,13 @@ public class Manager {
           if (id != -1) valueString = valueStringList.get(id);
           Entry entry = column.parseEntry(valueString);
           entries.add(entry);
+        }try {
+          logger.insert(database.getName(), table.tableName, newRow);
+          newRow = new Row(entries);
+          table.insert(newRow);
+        } catch (Exception e) {
+          e.printStackTrace();
         }
-        newRow = new Row(entries);
-        table.insert(newRow);
         //        System.out.println("[DEBUG]" + "current number of rows is " + table.getRowSize());
       }
 
@@ -568,8 +576,13 @@ public class Manager {
               || (comparator.LT() != null && curEntry.compareTo(comparedEntry) < 0)) {
             //            logger.session("SESSION:" + session + " DELETE " + database.getName() + "
             // " + tableName + " " + curRow.toString());
-            logger.delete(database.getName(), table.tableName, curRow);
-            table.delete(curRow);
+//            logger.message("delete:" + session + ":" + database.getName() + ":" + table.tableName);
+            try {
+              logger.delete(database.getName(), table.tableName, curRow);
+              table.delete(curRow);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
           }
         }
       }
@@ -705,8 +718,13 @@ public class Manager {
             ArrayList<Entry> oldRowEntries = new ArrayList<>(curRow.getEntries());
             oldRowEntries.set(updateIndex, attrValue);
             Row newRow = new Row(oldRowEntries);
-            logger.update(database.getName(), table.tableName, curRow, newRow);
-            table.update(curRow, newRow);
+            try {
+//            logger.message("UPDATE:" + session + " " + database.getName() + " " + tableName);
+              logger.update(database.getName(), table.tableName, curRow, newRow);
+              table.update(curRow, newRow);
+            } catch (Exception e) {
+              e.printStackTrace();
+            }
           }
         }
       }
@@ -980,7 +998,7 @@ public class Manager {
   }
 
   private void recover() {
-
+    if (!Global.RECOVER_FROM_DISC)
     //    lock.writeLock().lock();
     try {
       File readDatabasesFile = new File(MANAGER_DATAPATH);

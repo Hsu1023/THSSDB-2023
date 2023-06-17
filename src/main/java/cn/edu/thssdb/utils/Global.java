@@ -31,5 +31,7 @@ public class Global {
   public static final int BUFFER_POOL_SIZE = 5000;
 
   public static final String SEPERATE_LEVEL =
-      "READ_COMMITTED"; // could be changed into "READ_COMMITTED" or "SERIALIZABLE"
+      "SERIALIZABLE"; // could be changed into "READ_COMMITTED" or "SERIALIZABLE"
+
+  public static final Boolean RECOVER_FROM_DISC = false;
 }

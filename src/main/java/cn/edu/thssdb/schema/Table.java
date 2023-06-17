@@ -3,6 +3,7 @@ package cn.edu.thssdb.schema;
 import cn.edu.thssdb.exception.*;
 import cn.edu.thssdb.index.BPlusTree;
 import cn.edu.thssdb.type.ColumnType;
+import cn.edu.thssdb.utils.Global;
 import cn.edu.thssdb.utils.Pair;
 
 import java.io.*;
@@ -61,7 +62,7 @@ public class Table implements Iterable<Row> {
       throw new NoPrimaryKeyException();
     }
 
-    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, false);
+    this.index = new BPlusTree<>(databaseName, tableName, columns, primaryIndex, Global.RECOVER_FROM_DISC);
     //    this.index = new BPlusTree<>();
     // TODO initiate lock status.
     //    recover();

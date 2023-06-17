@@ -82,6 +82,12 @@ public class Logger {
       lock.writeLock().unlock();
     }
   }
+  public void message(String m) {
+    String log = "MESSAGE@" + m;
+    List<String> Array = new ArrayList<>();
+    Array.add(log);
+    writeLines(Array);
+  }
 
   public void delete(String database, String table, Row r) {
     String log = "DELETE@" + database + "@" + table + "@" + r.toString();
