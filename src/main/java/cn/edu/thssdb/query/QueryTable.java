@@ -59,23 +59,20 @@ public class QueryTable implements Iterator<Row> {
 
     // when join on primary key
     if (left_table.columns.get(leftColumnIndex).isPrimary()
-    && right_table.columns.get(rightColumnIndex).isPrimary())
-    {
+        && right_table.columns.get(rightColumnIndex).isPrimary()) {
       BPlusTreeIterator<Entry, Row> left_table_iter = left_table.index.iterator();
       BPlusTreeIterator<Entry, Row> right_table_iter = right_table.index.iterator();
 
-      if (!right_table_iter.hasNext() || !left_table_iter.hasNext())
-        return;
+      if (!right_table_iter.hasNext() || !left_table_iter.hasNext()) return;
 
       Pair<Entry, Row> right_table_element = right_table_iter.next();
-      while (left_table_iter.hasNext())
-      {
+      while (left_table_iter.hasNext()) {
         Pair<Entry, Row> left_table_element = left_table_iter.next();
-        while (right_table_iter.hasNext() && left_table_element.left.compareTo(right_table_element.left) > 0) // left > right
-          right_table_element = right_table_iter.next();
+        while (right_table_iter.hasNext()
+            && left_table_element.left.compareTo(right_table_element.left) > 0) // left > right
+        right_table_element = right_table_iter.next();
 
-        if (left_table_element.left.equals(right_table_element.left))
-        {
+        if (left_table_element.left.equals(right_table_element.left)) {
           Row new_row = new Row(left_table_element.right.getEntries());
           new_row.getEntries().addAll(right_table_element.right.getEntries());
           this.rows.add(new_row);
