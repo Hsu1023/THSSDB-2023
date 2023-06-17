@@ -1,8 +1,11 @@
 package cn.edu.thssdb.query;
 
 import cn.edu.thssdb.exception.AttributeNotExistException;
+import cn.edu.thssdb.index.BPlusTree;
+import cn.edu.thssdb.index.BPlusTreeIterator;
 import cn.edu.thssdb.schema.*;
 import cn.edu.thssdb.sql.SQLParser;
+import cn.edu.thssdb.utils.Pair;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -10,6 +13,7 @@ import java.util.Iterator;
 public class QueryTable implements Iterator<Row> {
   public ArrayList<Column> columns;
   public ArrayList<Row> rows;
+  public BPlusTree<Entry, Row> index;
 
   QueryTable() {
     // TODO
@@ -29,6 +33,7 @@ public class QueryTable implements Iterator<Row> {
     }
     Iterator<Row> rowIterator = table.iterator();
     this.rows = QueryTable.getRowsSatisfyWhereClause(rowIterator, columns, null);
+    this.index = table.index;
   }
 
   public QueryTable(
@@ -50,6 +55,34 @@ public class QueryTable implements Iterator<Row> {
 
     if (leftColumnIndex == -1 || rightColumnIndex == -1) {
       throw new AttributeNotExistException();
+    }
+
+    // when join on primary key
+    if (left_table.columns.get(leftColumnIndex).isPrimary()
+    && right_table.columns.get(rightColumnIndex).isPrimary())
+    {
+      BPlusTreeIterator<Entry, Row> left_table_iter = left_table.index.iterator();
+      BPlusTreeIterator<Entry, Row> right_table_iter = right_table.index.iterator();
+
+      if (!right_table_iter.hasNext() || !left_table_iter.hasNext())
+        return;
+
+      Pair<Entry, Row> right_table_element = right_table_iter.next();
+      while (left_table_iter.hasNext())
+      {
+        Pair<Entry, Row> left_table_element = left_table_iter.next();
+        while (right_table_iter.hasNext() && left_table_element.left.compareTo(right_table_element.left) > 0) // left > right
+          right_table_element = right_table_iter.next();
+
+        if (left_table_element.left.equals(right_table_element.left))
+        {
+          Row new_row = new Row(left_table_element.right.getEntries());
+          new_row.getEntries().addAll(right_table_element.right.getEntries());
+          this.rows.add(new_row);
+        }
+      }
+
+      return;
     }
 
     for (Row left_row : left_table.rows) {
